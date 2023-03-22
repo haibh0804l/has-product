@@ -1,0 +1,48 @@
+#components-layout-demo-basic .code-box-demo {
+  text-align: center;
+}
+.ant-layout-header,
+.ant-layout-footer {
+  color: #fff;
+  background: #ffffff !important;
+}
+#components-layout-demo-basic .ant-layout-footer {
+  line-height: 1.5;
+}
+#components-layout-demo-basic .ant-layout-sider {
+  color: #fff;
+  line-height: 120px;
+  background: #3ba0e9;
+}
+.ant-layout-content {
+  /* min-height: 120px; */
+  /* color: #fff; */
+  /* line-height: 120px; */
+  background: white;
+}
+#components-layout-demo-basic > .code-box-demo > .ant-layout + .ant-layout {
+  margin-top: 48px;
+}
+
+.overdue {
+  margin: 0%;
+  color: red !important;
+}
+
+.ant-avatar-group {
+  display: contents;
+}
+
+.bold-weight {
+  font-weight: bold;
+  font-size: 24px;
+}
+
+.container {
+  margin-bottom: 30px;
+}
+
+.ant-input-number-lg input.ant-input-number-input {
+  height: 100px;
+  font-size: 40px;
+}

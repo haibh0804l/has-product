@@ -1,0 +1,73 @@
+h4 {
+  margin: 0%;
+}
+
+p {
+  margin: 0%;
+}
+
+.overdue {
+  margin: 0%;
+  color: red !important;
+}
+
+.inner-content {
+  margin: '0 16px';
+}
+
+.ant-layout .ant-layout-sider-children {
+  height: 100%;
+  margin-top: -0.1px;
+  padding-top: 0.1px;
+  background-color: #0e7490 !important;
+}
+
+.ant-table-wrapper .ant-table-thead > tr > th {
+  background-color: #f1f5f9 !important;
+}
+
+/* .ant-menu-vertical > .ant-menu-submenu {
+    background-color: #0E7490 !important
+} */
+
+.ant-menu-vertical {
+  background-color: #0e7490 !important;
+  /* height: 100%; */
+}
+
+.ant-list .ant-list-item {
+  padding: 0%;
+}
+
+.ant-layout .ant-layout-header {
+  padding: 0;
+}
+
+.ant-avatar {
+  cursor: pointer;
+}
+
+.show-more-btn {
+  background-color: #ffffff;
+}
+
+.edit-icon:hover {
+  color: #0e7490;
+  cursor: pointer;
+}
+
+.custom-table-row {
+  background-color: white;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.5);
+  border-radius: 20px;
+  border: transparent;
+}

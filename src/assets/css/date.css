@@ -1,0 +1,8 @@
+.ant-picker .ant-picker-input > input {
+  color: white;
+}
+
+.ant-row {
+  flex-direction: row;
+  flex-wrap: nowrap;
+}

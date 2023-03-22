@@ -1,0 +1,9 @@
+version: "3.7"
+
+services:
+  app:
+    image: has-product-frontend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+
