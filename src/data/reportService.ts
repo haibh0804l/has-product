@@ -5,6 +5,7 @@ import {
   PersonalScoreResponse,
   ScoreRankingRequest,
   ScoreRankingResponse,
+  TrustScoreRequest,
 } from './database/Report'
 
 export const GetPersonalScore = async (
@@ -18,9 +19,20 @@ export const GetPersonalScore = async (
   })
   return response
 }
+
 export const GetScoreRanking = async (scoreRankingReq: ScoreRankingRequest) => {
   const serviceUrl = process.env.REACT_APP_API_REPORT_GETSCORERANKING!
   const response = await axios.post(serviceUrl, scoreRankingReq, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+  return response
+}
+
+export const GetTrustScore = async (trustScoreReq: TrustScoreRequest) => {
+  const serviceUrl = process.env.REACT_APP_API_REPORT_GETTRUSTSCORE!
+  const response = await axios.post(serviceUrl, trustScoreReq, {
     headers: {
       'Content-Type': 'application/json',
     },

@@ -200,6 +200,7 @@ const InsertTask = async (serviceUrl: string, task: any) => {
     Status: '',
     Reporter: user,
     GroupPath: '',
+    SummaryReport: '',
   }
 
   await axios
@@ -241,6 +242,7 @@ const UpdateTask = async (
     Status: '',
     Reporter: user,
     GroupPath: '',
+    SummaryReport: '',
   }
 
   let inputTask: InputTasks = JSON.parse(JSON.stringify(task))

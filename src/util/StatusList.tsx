@@ -10,6 +10,29 @@ const GetStatusIgnoreList = (
 ) => {
   const ignoreList: Status[] = IGNORE_STT_DEFAULT()
   //get current status id
+  if (assigneeId === '' || reporterId === '') {
+    ignoreList.push(
+      {
+        id: 1,
+      },
+      {
+        id: 2,
+      },
+      {
+        id: 3,
+      },
+      {
+        id: 4,
+      },
+      {
+        id: 5,
+      },
+      {
+        id: 6,
+      },
+    )
+    return ignoreList
+  }
   const currentStatusObj = statusData.filter(
     (element) => element.name.toLowerCase() === currentStatus.toLowerCase(),
   )
@@ -146,6 +169,27 @@ const GetStatusIgnoreList = (
           )
         }
       }
+    } else {
+      ignoreList.push(
+        {
+          id: 1,
+        },
+        {
+          id: 2,
+        },
+        {
+          id: 3,
+        },
+        {
+          id: 4,
+        },
+        {
+          id: 5,
+        },
+        {
+          id: 6,
+        },
+      )
     }
   }
 

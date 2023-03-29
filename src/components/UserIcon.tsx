@@ -31,7 +31,7 @@ const UserIcon: React.FC<User> = ({
 
   const firstNameLetter = userInfo?.FirstName?.substring(0, 1).toUpperCase()
   const lastNameLetter = userInfo?.LastName?.substring(0, 1).toUpperCase()
-  user = firstNameLetter + '' + lastNameLetter
+  user = lastNameLetter + '' + firstNameLetter 
   return (
     <>
       <Tooltip title={tooltipName} placement="top">

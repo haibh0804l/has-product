@@ -30,9 +30,30 @@ p {
     background-color: #0E7490 !important
 } */
 
+.ant-dropdown-menu {
+  max-height: 250px;
+  overflow: auto;
+}
+
+.datePicker .ant-picker-input > input {
+  color: transparent;
+}
+
 .ant-menu-vertical {
   background-color: #0e7490 !important;
   /* height: 100%; */
+}
+
+.ant-card .ant-card-body {
+  padding: 24px 24px 0px 24px;
+}
+
+.ant-card .ant-card-head {
+  min-height: 45px;
+}
+
+.ant-table-wrapper .ant-table-pagination.ant-pagination {
+  margin: 12px 0px 12px 0px;
 }
 
 .ant-list .ant-list-item {
@@ -58,6 +79,44 @@ p {
 
 .custom-table-row {
   background-color: white;
+}
+
+.dont-show .ant-select-selection-item {
+  display: none !important;
+}
+
+.panel-row {
+  background-color: #f6f1f1;
+  margin-bottom: 8px;
+  border-radius: 8px !important;
+}
+
+.ant-popover-inner {
+  padding: 15px !important;
+}
+
+.custom-sider .ant-layout-sider-trigger {
+  background-color: #0e7490;
+}
+
+.ant-btn-primary {
+  box-shadow: none;
+}
+.project-btn {
+  color: #000000;
+  background-color: #d1d5db;
+}
+
+.project-btn:hover {
+  color: #ffffff !important;
+  background-color: #0e7490;
+}
+
+.ant-collapse
+  > .ant-collapse-item
+  > .ant-collapse-header
+  .ant-collapse-expand-icon {
+  height: 26px;
 }
 
 ::-webkit-scrollbar {

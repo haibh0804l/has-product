@@ -50,7 +50,7 @@ const Comp: React.FC<CompInput> = ({ user, comment, createdDate }) => {
           }}
         >
           <p style={{ float: 'left', margin: '7px 0 7px 7px' }}>
-            {user.FirstName + ' ' + user.LastName}
+            {user.LastName + ' ' + user.FirstName}
           </p>
           <div
             style={{
@@ -79,11 +79,6 @@ const Comp: React.FC<CompInput> = ({ user, comment, createdDate }) => {
 }
 
 const Comments: React.FC<CommnentsInput> = ({ taskId }) => {
-  /* const [dummyInput, setDummyInput] = useState<CommentResponse[]>(
-    JSON.parse(
-      '[{\r\n"_id":"64095a2b073b9afdbb4a6665",\r\n"Comment":"Testcomment64095a2a1f43125f74f01cf4",\r\n"User":{\r\n"_id":"63bbf13e2facab213077dc03",\r\n"UserName":"minhdq@bpm.lab",\r\n"Name":"minhdq",\r\n"Role":"63bf862a1784ec2c458d1657",\r\n"Department":"R&D",\r\n"__v":0,\r\n"Color":"#49768F",\r\n"FirstName":"Minh",\r\n"Group":[\r\n"63c5050b2b3d7578b6388560"\r\n],\r\n"LastName":"Dinh"\r\n},\r\n"CreatedDate":"2023-03-09T04:01:46.216Z",\r\n"Attachment":[],\r\n"__v":0\r\n},\r\n{\r\n"_id":"64095a70073b9afdbb4a6668",\r\n"Comment":"Testcomment64095a6f1f43125f74f01cff",\r\n"User":{\r\n"_id":"63bbf13e2facab213077dc03",\r\n"UserName":"minhdq@bpm.lab",\r\n"Name":"minhdq",\r\n"Role":"63bf862a1784ec2c458d1657",\r\n"Department":"R&D",\r\n"__v":0,\r\n"Color":"#49768F",\r\n"FirstName":"Minh",\r\n"Group":[\r\n"63c5050b2b3d7578b6388560"\r\n],\r\n"LastName":"Dinh"\r\n},\r\n"CreatedDate":"2023-03-09T04:02:55.422Z",\r\n"Attachment":[],\r\n"__v":0\r\n},\r\n{\r\n"_id":"64095add073b9afdbb4a666a",\r\n"Comment":"Testcomment64095add1f43125f74f01d0a",\r\n"User":{\r\n"_id":"63bbf13e2facab213077dc03",\r\n"UserName":"minhdq@bpm.lab",\r\n"Name":"minhdq",\r\n"Role":"63bf862a1784ec2c458d1657",\r\n"Department":"R&D",\r\n"__v":0,\r\n"Color":"#49768F",\r\n"FirstName":"Minh",\r\n"Group":[\r\n"63c5050b2b3d7578b6388560"\r\n],\r\n"LastName":"Dinh"\r\n},\r\n"CreatedDate":"2023-03-09T04:04:45.068Z",\r\n"Attachment":[],\r\n"__v":0\r\n}]',
-    ),
-  ) */
   const [dummyInput, setDummyInput] = useState<CommentResponse[]>([])
   const socket = useContext(SocketContext)
   const user = useAppSelector((state) => state.userInfo.user)
@@ -114,8 +109,8 @@ const Comments: React.FC<CommnentsInput> = ({ taskId }) => {
       if (commentsResult.comment.length === 0) {
       } else {
         setDummyInput(commentsResult.comment[0].Comment)
+        refForScroll.current!.scrollIntoView({ behavior: 'smooth' })
       }
-      refForScroll.current!.scrollIntoView({ behavior: 'smooth' })
     }
   }, [commentsResult.loading, commentsResult.comment.length])
 
@@ -124,15 +119,16 @@ const Comments: React.FC<CommnentsInput> = ({ taskId }) => {
     refForScroll.current!.scrollIntoView({ behavior: 'smooth' })
   }, [userComments]) */
 
-  useEffect(() => {
+  /*  useEffect(() => {
     refForScroll.current!.scrollIntoView({ behavior: 'smooth' })
-  })
+  }) */
 
   const AddComp = () => {
     if (commentInput !== '') {
       const comment: CommentRequest = {
         taskId: taskId,
         userId: getCookie('user_id')!,
+        userName: getCookie('user_name'),
         comment: commentInput,
         createdDate: new Date(),
       }
@@ -161,7 +157,7 @@ const Comments: React.FC<CommnentsInput> = ({ taskId }) => {
         direction="vertical"
         style={{
           width: '100%',
-          height: '390px',
+          minHeight: '380px',
           overflowY: 'scroll',
           overflowX: 'hidden',
         }}
@@ -182,7 +178,7 @@ const Comments: React.FC<CommnentsInput> = ({ taskId }) => {
       </Space>
       <div
         style={{
-          height: '30px',
+          height: 'auto',
         }}
       >
         <Input

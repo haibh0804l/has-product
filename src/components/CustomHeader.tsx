@@ -74,7 +74,7 @@ const CustomHeader: React.FC<IHeader> = ({ pageName, userData }) => {
   ]
 
   return (
-    <Header style={{ padding: 0, background: 'white' }}>
+    <Header style={{ padding: 0, background: 'white', height: '8vh' }}>
       <Row>
         <Col span={12}>
           <Breadcrumbs main="Home" sub={pageName} />

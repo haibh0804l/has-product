@@ -28,16 +28,18 @@ import { useAppDispatch, useAppSelector } from '../../redux/app/hook'
 import { Params } from '../../data/interface/task'
 import { fetchTasksReporter } from '../../redux/features/tasks/reporterTaskSlice'
 import { reportToMeTaskChange } from '../../redux/features/reportToMeTask/reportToMeTaskSlice'
-import { IGNORE_STT_DEFAULT, UPDATE_MODE } from '../../util/ConfigText'
+import { IGNORE_STT_DEFAULT, SEARCH, UPDATE_MODE } from '../../util/ConfigText'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { ToLowerCaseNonAccentVietnamese } from '../../util/FormatText'
 import GetStatusIgnoreList from '../../util/StatusList'
+import { status } from '../../data/menuProps'
 
 interface DataType {
   key: string
   status: React.ReactNode
   task: React.ReactNode
+  project: React.ReactNode
   path?: string
   assignee: React.ReactNode
   priority: React.ReactNode
@@ -97,6 +99,11 @@ const TaskListOverDue: React.FC<InputData> = ({
       dataIndex: 'task',
       width: '30vw',
     },
+    {
+      title: 'Project',
+      dataIndex: 'project',
+      width: '20vw',
+    },
     /*  {
     title: 'Path',
     dataIndex: 'path',
@@ -155,13 +162,13 @@ const TaskListOverDue: React.FC<InputData> = ({
     })
     inputObj = inputObj.sort(
       (a, b) =>
-        new Date(b.DueDate!).getTime() - new Date(a.DueDate!).getTime() ||
+        new Date(a.DueDate!).getTime() - new Date(b.DueDate!).getTime() ||
         (a.PriorityNum as number) - (b.PriorityNum as number) ||
         new Date(b.CreateDate).getTime() - new Date(a.CreateDate).getTime(),
     )
 
     setInput(inputObj)
-
+    const lin = 0
     const _data: DataType[] = []
     if (inputLength > 0) {
       for (let index = 0; index < inputLength; index++) {
@@ -184,6 +191,7 @@ const TaskListOverDue: React.FC<InputData> = ({
               onClickMenu={handleMenuClickStatus}
             />
           ),
+
           task: (
             <div onClick={() => OnNavigate(inputObj[index])}>
               <ParagraphExample
@@ -191,6 +199,20 @@ const TaskListOverDue: React.FC<InputData> = ({
                 task={inputObj[index]}
               />
             </div>
+          ),
+          project: (
+            <>
+              <div>
+                <ParagraphExample
+                  name={
+                    inputObj[index].Project
+                      ? inputObj[index].Project?.ProjectName
+                      : '-'
+                  }
+                  task={inputObj[index]}
+                />
+              </div>
+            </>
           ),
           assignee: <IconGroup inputList={inputObj[index].Assignee} />,
           priority: (
@@ -211,13 +233,44 @@ const TaskListOverDue: React.FC<InputData> = ({
             <>
               {inputObj[index].DueDate === null ? (
                 ''
-              ) : new Date(inputObj[index].DueDate!) < new Date() ? (
+              ) : inputObj[index].Status === 'Incompleted' ||
+                inputObj[index].Status === 'Completed' ? (
+                inputObj[index].CloseDate! === undefined ? (
+                  <div>
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
+                  </div>
+                ) : new Date(inputObj[index].DueDate!) >=
+                  new Date(inputObj[index].CloseDate!) ? (
+                  <div>
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
+                  </div>
+                ) : (
+                  <div className="overdue">
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
+                  </div>
+                )
+              ) : new Date() > new Date(inputObj[index].DueDate!) ? (
                 <div className="overdue">
-                  <DateFormatter dateString={inputObj[index].DueDate!} />
+                  <DateFormatter
+                    dateString={inputObj[index].DueDate!}
+                    task={inputObj[index]}
+                  />
                 </div>
               ) : (
                 <div>
-                  <DateFormatter dateString={inputObj[index].DueDate!} />
+                  <DateFormatter
+                    dateString={inputObj[index].DueDate!}
+                    task={inputObj[index]}
+                  />
                 </div>
               )}
             </>
@@ -292,6 +345,20 @@ const TaskListOverDue: React.FC<InputData> = ({
               />
             </div>
           ),
+          project: (
+            <>
+              <div>
+                <ParagraphExample
+                  name={
+                    inputObj[index].Project
+                      ? inputObj[index].Project?.ProjectName
+                      : '-'
+                  }
+                  task={inputObj[index]}
+                />
+              </div>
+            </>
+          ),
           assignee: <IconGroup inputList={inputObj[index].Assignee} />,
           priority: (
             <DropdownProps
@@ -311,13 +378,44 @@ const TaskListOverDue: React.FC<InputData> = ({
             <>
               {inputObj[index].DueDate === null ? (
                 ''
-              ) : new Date(inputObj[index].DueDate!) < new Date() ? (
+              ) : inputObj[index].Status === 'Incompleted' ||
+                inputObj[index].Status === 'Completed' ? (
+                inputObj[index].CloseDate! === undefined ? (
+                  <div>
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
+                  </div>
+                ) : new Date(inputObj[index].DueDate!) >=
+                  new Date(inputObj[index].CloseDate!) ? (
+                  <div>
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
+                  </div>
+                ) : (
+                  <div className="overdue">
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
+                  </div>
+                )
+              ) : new Date() > new Date(inputObj[index].DueDate!) ? (
                 <div className="overdue">
-                  <DateFormatter dateString={inputObj[index].DueDate!} />
+                  <DateFormatter
+                    dateString={inputObj[index].DueDate!}
+                    task={inputObj[index]}
+                  />
                 </div>
               ) : (
                 <div>
-                  <DateFormatter dateString={inputObj[index].DueDate!} />
+                  <DateFormatter
+                    dateString={inputObj[index].DueDate!}
+                    task={inputObj[index]}
+                  />
                 </div>
               )}
             </>
@@ -478,7 +576,7 @@ const TaskListOverDue: React.FC<InputData> = ({
           <Col span={16}>
             <Input
               prefix={<FontAwesomeIcon icon={faSearch} />}
-              placeholder="Tìm task"
+              placeholder={SEARCH}
               //onPressEnter={(e) => onSearch(e)}
               style={{
                 width: '50%',

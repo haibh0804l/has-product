@@ -1,3 +1,4 @@
+import { ProjectRepsonse } from './Project'
 import { Tasks } from './Tasks'
 import { Users } from './Users'
 
@@ -27,4 +28,7 @@ export interface InputTasks {
   userId?: string
   userName?: string
   tasks?: any[]
+  Project?: ProjectRepsonse
+  ParentTask?: string
+  SummaryReport?: string
 }

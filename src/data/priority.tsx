@@ -25,11 +25,11 @@ export default [
     name: 'Low',
     icon: <FontAwesomeIcon icon={faFlag} color="#4B5563" />,
     color: '#4B5563',
-  },
+  } /* 
   {
     id: 5,
     name: 'Undefined',
     icon: <FontAwesomeIcon icon={faFlag} color="#4B5563" />,
     color: '#E5E7EB',
-  },
+  }, */,
 ]

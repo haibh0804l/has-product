@@ -13,6 +13,7 @@ import '../../assets/css/layout.css'
 import { LOGIN_ERROR, LOGIN_SERVICE_ERROR } from '../../util/ConfigText'
 import { useAppDispatch, useAppSelector } from '../../redux/app/hook'
 import { setUserInfo } from '../../redux/features/userInfo/userInfoSlice'
+import { addManager } from '../../redux/features/filter/filterSlice'
 
 type MessageResponse = {
   message: string
@@ -30,7 +31,7 @@ export default () => {
 
   const username = Form.useWatch('username', form)
   const password = Form.useWatch('password', form)
-
+  const filterInit = useAppSelector((state) => state.filter)
   const dispatch = useAppDispatch()
 
   const routeChange = (serviceUrl: string) => {
@@ -85,11 +86,13 @@ export default () => {
                   (r.LastName + ' ' + r.FirstName) as string,
                   { expires: 1 },
                 )
-                dispatch(setUserInfo(r))
+
                 setCookie('userInfo', JSON.stringify(r) as string, {
                   expires: 1,
                 })
                 sessionStorage.setItem('user_id', r._id as string)
+                dispatch(setUserInfo(r))
+
                 navigate(CustomRoutes.MyWork.path)
               }
             } else {

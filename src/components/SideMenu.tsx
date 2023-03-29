@@ -44,14 +44,23 @@ const items: MenuItem[] = [
       <FontAwesomeIcon icon={faChartSimple} />
     </Link>,
   ),
-  getItem('Work', 'Work', <FontAwesomeIcon icon={faTasks} />, [
-    getItem(
-      'Công việc của tôi',
-      CustomRoutes.MyWork.name,
-      <Link to={CustomRoutes.MyWork.path}>
-        <FontAwesomeIcon icon={faArchive} />
-      </Link>,
-    ),
+
+  getItem(
+    'My Work',
+    'My Work',
+    <Link to={CustomRoutes.MyWork.path}>
+       <FontAwesomeIcon icon={faArchive} />
+       
+     </Link>,
+  ),
+  // getItem('Work', 'Work', <FontAwesomeIcon icon={faTasks} />, [
+  //   getItem(
+  //     'Công việc của tôi',
+  //     CustomRoutes.MyWork.name,
+  //     <Link to={CustomRoutes.MyWork.path}>
+  //       <FontAwesomeIcon icon={faArchive} />
+  //     </Link>,
+  //   ),
     /*  getItem(
       'My Space',
       'My Space',
@@ -83,7 +92,7 @@ const items: MenuItem[] = [
         ),
       ],
     ), */
-  ]),
+  // ]),
   /* getItem('User', 'User', <FontAwesomeIcon icon={faUser} />),
   getItem('Team', 'Team', <FontAwesomeIcon icon={faDollarSign} />, [
     getItem('Team 1', 'Team 1'),

@@ -1,12 +1,5 @@
 import { ScoreCompProp } from '../data/interface/ScoreCompProps'
-import { Status } from '../data/interface/Status'
-import {
-  DEFAULT_NOTPASS_SCORE,
-  DEFAULT_PASS_SCORE,
-  HIDE,
-  READONLY,
-  SHOW,
-} from './ConfigText'
+import { HIDE, READONLY, SHOW } from './ConfigText'
 
 const GetScoreReviewDisplay = (
   userId: string,

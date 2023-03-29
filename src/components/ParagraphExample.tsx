@@ -5,13 +5,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faDiagramProject } from '@fortawesome/free-solid-svg-icons'
 import { Tasks } from '../data/database/Tasks'
 interface Name {
-  name: string
+  type?: string
+  name?: string
   task: Tasks
 }
 
 const { Paragraph } = Typography
 
-const ParagraphExample: React.FC<Name> = ({ name, task }) => {
+const ParagraphExample: React.FC<Name> = ({ type, name, task }) => {
   const [ellipsis, setEllipsis] = useState(true)
   const [expand, setExpand] = useState(false)
   const [counter, setCounter] = useState(0)
@@ -49,8 +50,8 @@ const ParagraphExample: React.FC<Name> = ({ name, task }) => {
             </Paragraph>
           </Tooltip>
 
-          {task && task.Subtask && task.Subtask?.length ? (
-            <Tooltip title={task.Subtask?.length + ' task(s)'}>
+          {type && task && task.Subtask && task.Subtask?.length ? (
+            <Tooltip title={task.Subtask?.length + ' subtask(s)'}>
               <FontAwesomeIcon icon={faDiagramProject} />
             </Tooltip>
           ) : null}

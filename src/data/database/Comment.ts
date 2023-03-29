@@ -3,6 +3,7 @@ import { Users } from './Users'
 export interface CommentRequest {
   taskId: string
   userId: string
+  userName?: string
   comment: string
   createdDate: Date
 }

@@ -63,4 +63,21 @@ const GetUserByTypeAxios = async (
   return response
 }
 
-export { GetAllUsers, GetUserByType, GetUserByTypeAxios }
+const GetAllFilter = async (type: string, userName?: string) => {
+  const serviceUrl = process.env.REACT_APP_API_USERS_GETALLFILTER!
+  const response = await axios.post(
+    serviceUrl,
+    {
+      type: type,
+      userName: userName,
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    },
+  )
+  return response.data
+}
+
+export { GetAllUsers, GetUserByType, GetUserByTypeAxios, GetAllFilter }

@@ -57,11 +57,11 @@ const columns: ColumnsType<DataType> = [
 ]
 const MedalIcon: React.FC<ScoreRankingMedal> = ({ index }) => {
   if (index === 1) {
-    return <Icon component={Gold} style={{ fontSize: '30px' }} />
+    return <Icon component={Gold} style={{ fontSize: '20px' }} />
   } else if (index === 2) {
-    return <Icon component={Silver} style={{ fontSize: '30px' }} />
+    return <Icon component={Silver} style={{ fontSize: '20px' }} />
   } else if (index === 3) {
-    return <Icon component={Bronze} style={{ fontSize: '30px' }} />
+    return <Icon component={Bronze} style={{ fontSize: '20px' }} />
   } else {
     return <p>{index}</p>
   }
@@ -71,10 +71,10 @@ const ScoreRanking: React.FC<ScoreRankingInput> = ({
   reloadCount,
   defaultDep,
 }) => {
-  const [value, setValue] = useState<string | number>('This week')
+  const [value, setValue] = useState<string | number>('This month')
   const [scoreRankingReq, setScoreRankingReq] = useState<ScoreRankingRequest>({
     department: defaultDep,
-    baseOnWeek: 1,
+    baseOnMonth: 1,
   })
   const [tableData, setTableData] = useState<DataType[]>([])
   const [options, setOptions] = useState<any[]>([])
@@ -213,6 +213,9 @@ const ScoreRanking: React.FC<ScoreRankingInput> = ({
         />
         <Space direction="horizontal" align="center" style={{ float: 'right' }}>
           <Segmented
+            style={{ backgroundColor: '#9CA3AF' }}
+            // style={{ background: '#9CA3AF ' }}
+            color="red"
             options={['This week', 'This month', 'This year']}
             value={value}
             onChange={(e) => {
@@ -226,11 +229,10 @@ const ScoreRanking: React.FC<ScoreRankingInput> = ({
         rowClassName={(record, index) => {
           return 'custom-table-row'
         }}
-        showHeader={false}
         pagination={{ pageSize: 5 }}
         columns={columns}
         dataSource={tableData}
-        size="middle"
+        size="small"
       />
     </Card>
   )

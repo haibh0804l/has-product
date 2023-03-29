@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useState } from 'react'
+import React, { Suspense, useCallback, useEffect, useState } from 'react'
 import { Avatar, Button, Form, Input, MenuProps, Space, Spin } from 'antd'
 import DropdownProps from './Dropdown'
 import { Tasks } from '../data/database/Tasks'
@@ -26,14 +26,18 @@ import '../assets/css/index.css'
 import { Status } from '../data/interface/Status'
 import GetStatusIgnoreList from '../util/StatusList'
 import { getCookie } from 'typescript-cookie'
+import { GetUserByType } from '../data/allUsersService'
+import { GetUsersByProject } from '../data/projectService'
 
 const UserListComp = React.lazy(() => import('./UserListComp'))
 type SubTaskInput = {
+  // style: {{with : '20px'}}
   tasks: Tasks
   onFinish?: (e: any) => void
   onFinishFailed: (error: any) => void
   assigneeData: Users[]
   reporterData: Users[]
+  noLoad?: boolean
   mode?: string
   taskId?: string
   isEditDetail?: boolean
@@ -44,14 +48,14 @@ const items: MenuProps['items'] = []
 
 const SubTask: React.FC<SubTaskInput> = ({
   tasks,
-  assigneeData,
-  reporterData,
   onFinish,
   onFinishFailed,
   mode,
   taskId,
-  isEditDetail,
   parentTask,
+  noLoad,
+  assigneeData,
+  reporterData,
 }) => {
   //const taskKey = 'Subtask'
   const navigate = useNavigate()
@@ -64,6 +68,54 @@ const SubTask: React.FC<SubTaskInput> = ({
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState(false)
   const [statusIgnoreList, setStatusIgnoreList] = useState<Status[]>([])
+  const [assigneeDataInner, setAssigneeDataInner] = useState<Users[]>([])
+  const [reporterDataInner, setReporterDataInner] = useState<Users[]>([])
+
+  const fetchData = useCallback(async () => {
+    if (noLoad !== true) {
+      console.log('Goes here ' + getCookie('projectId'))
+      if (!getCookie('projectId')) {
+        //no project
+        const data = await GetUserByType(
+          'api/users/getReporterOrAssignee',
+          'assignee',
+          getCookie('user_id')?.toString(),
+        )
+        setAssigneeDataInner(data)
+
+        const dataRp = await GetUserByType(
+          'api/users/getReporterOrAssignee',
+          'reporter',
+          getCookie('user_id')?.toString(),
+        )
+        setReporterDataInner(dataRp)
+      } else {
+        //have project
+        const dataAssignee = await GetUsersByProject(
+          getCookie('projectId')!,
+          'assignee',
+        )
+        const data = dataAssignee.data as Users[]
+
+        setAssigneeDataInner(data)
+
+        const dataReporter = await GetUsersByProject(
+          getCookie('projectId')!,
+          'reporter',
+        )
+
+        const dataRp = dataReporter.data as Users[]
+        setReporterDataInner(dataRp)
+      }
+    } else {
+      setAssigneeDataInner(assigneeData)
+      setReporterDataInner(reporterData)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   useEffect(() => {
     if (tasks.TaskName !== '') {
@@ -93,7 +145,7 @@ const SubTask: React.FC<SubTaskInput> = ({
       state: {
         search: '/' + taskId, // query string
         // location state
-        parentTask: parentTask,
+        //parentTask: parentTask,
       },
     })
     navigate(0)
@@ -180,15 +232,16 @@ const SubTask: React.FC<SubTaskInput> = ({
             borderWidth: '1px',
             borderColor: '#d9d9d9',
             paddingRight: '10px',
-            width: '100%',
+            // paddingLeft : '10px',
+            // width: '100%',
           }}
           //align="baseline"
         >
           <Form
             form={form}
             name="basic"
-            //labelCol={{ span: 8 }}
-            // wrapperCol={{ span: 16 }}
+            labelCol={{ span: 8 }}
+            wrapperCol={{ span: 16 }}
             initialValues={{ remember: true, Layout: 'vertical' }}
             onFinish={(e) => {
               if (onFinish) onFinish(e)
@@ -233,7 +286,7 @@ const SubTask: React.FC<SubTaskInput> = ({
                   { required: true, message: '' },
                   {
                     validator: (_, value) =>
-                      value.trim() !== ''
+                      value && value.trim() !== ''
                         ? Promise.resolve()
                         : Promise.reject(new Error('')),
                   },
@@ -248,7 +301,7 @@ const SubTask: React.FC<SubTaskInput> = ({
               >
                 {editTaskName === true ? (
                   <Input
-                    style={{ borderColor: 'transparent' }}
+                    style={{ borderColor: 'transparent', width: '100%' }}
                     autoFocus={autoFocus}
                     defaultValue={subTask.TaskName}
                     value={subTask.TaskName}
@@ -293,7 +346,9 @@ const SubTask: React.FC<SubTaskInput> = ({
                   className="edit-icon"
                   icon={faEdit}
                   onClick={() => OnNavigate(taskId!)}
-                  style={{}}
+                  style={{
+                    marginBottom: '0px',
+                  }}
                 />
               )}
               <Form.Item
@@ -305,7 +360,7 @@ const SubTask: React.FC<SubTaskInput> = ({
               >
                 <Suspense fallback={<div>Loading...</div>}>
                   <UserListComp
-                    userData={assigneeData}
+                    userData={assigneeDataInner}
                     maxCount={2}
                     icon={
                       <Avatar
@@ -334,7 +389,7 @@ const SubTask: React.FC<SubTaskInput> = ({
               >
                 <Suspense fallback={<div>Loading...</div>}>
                   <UserListComp
-                    userData={reporterData}
+                    userData={reporterDataInner}
                     maxCount={3}
                     icon={
                       <Avatar

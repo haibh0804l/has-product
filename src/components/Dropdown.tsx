@@ -373,7 +373,7 @@ const DropdownProps: React.FC<Type> = ({
             {loading === false ? (
               <Space>
                 {button === true ? (
-                  <Button shape="circle">
+                  <Button shape="circle" style={{ cursor: 'not-allowed' }}>
                     <FindIcon type={type} text={txt} />
                   </Button>
                 ) : (

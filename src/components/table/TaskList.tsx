@@ -30,11 +30,15 @@ import GetStatusIgnoreList from '../../util/StatusList'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faLink, faSearch } from '@fortawesome/free-solid-svg-icons'
 import { ToLowerCaseNonAccentVietnamese } from '../../util/FormatText'
+import { SEARCH } from '../../util/ConfigText'
+import { fetchFilterResult } from '../../redux/features/filter/filterSlice'
+import { FilterRequest } from '../../data/interface/FilterInterface'
 
 interface DataType {
   key: string
   status: React.ReactNode
   task: React.ReactNode
+  project: React.ReactNode
   path?: string
   priority: React.ReactNode
   startDate?: React.ReactNode
@@ -72,6 +76,7 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
   const [dataInput, setDataInput] = useState<DataType[]>([])
   const [dataSplice, setDataSplice] = useState<DataType[]>([])
   const task = useAppSelector((state) => state.assigneeTasks)
+  const filterInit = useAppSelector((state) => state.filter)
   const dispatch = useAppDispatch()
   const params: Params = {
     serviceUrl: '',
@@ -90,6 +95,11 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
       title: 'Task',
       dataIndex: 'task',
       width: '35vw',
+    },
+    {
+      title: 'Project',
+      dataIndex: 'project',
+      width: '20vw',
     },
     /* {
     title: 'Path',
@@ -284,10 +294,24 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
               onClickMenu={handleMenuClickStatus}
             />
           ),
+          project: (
+            <div>
+              <ParagraphExample
+                name={
+                  inputObj[index].Project
+                    ? inputObj[index].Project?.ProjectName
+                    : '-'
+                }
+                task={inputObj[index]}
+              />
+            </div>
+          ),
+
           task: (
             <>
               <div onClick={() => OnNavigate(inputObj[index])}>
                 <ParagraphExample
+                  type="Task"
                   name={inputObj[index].TaskName}
                   task={inputObj[index]}
                 />
@@ -309,13 +333,44 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
             <>
               {inputObj[index].DueDate === null ? (
                 ''
-              ) : new Date(inputObj[index].DueDate!) < new Date() ? (
+              ) : inputObj[index].Status === 'Completed' ||
+                inputObj[index].Status === 'Incompleted' ? (
+                inputObj[index].CloseDate! === undefined ? (
+                  <div>
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
+                  </div>
+                ) : new Date(inputObj[index].DueDate!) >=
+                  new Date(inputObj[index].CloseDate!) ? (
+                  <div>
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
+                  </div>
+                ) : (
+                  <div className="overdue">
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
+                  </div>
+                )
+              ) : new Date() > new Date(inputObj[index].DueDate!) ? (
                 <div className="overdue">
-                  <DateFormatter dateString={inputObj[index].DueDate!} />
+                  <DateFormatter
+                    dateString={inputObj[index].DueDate!}
+                    task={inputObj[index]}
+                  />
                 </div>
               ) : (
                 <div>
-                  <DateFormatter dateString={inputObj[index].DueDate!} />
+                  <DateFormatter
+                    dateString={inputObj[index].DueDate!}
+                    task={inputObj[index]}
+                  />
                 </div>
               )}
             </>
@@ -337,10 +392,25 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
                 onClickMenu={handleMenuClickStatus}
               />
             ),
+            project: (
+              <>
+                <div>
+                  <ParagraphExample
+                    name={
+                      inputObj[index].Project
+                        ? inputObj[index].Project?.ProjectName
+                        : '-'
+                    }
+                    task={inputObj[index]}
+                  />
+                </div>
+              </>
+            ),
             task: (
               <>
                 <div onClick={() => OnNavigate(inputObj[index])}>
                   <ParagraphExample
+                    type="Task"
                     name={inputObj[index].TaskName}
                     task={inputObj[index]}
                   />
@@ -362,13 +432,44 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
               <>
                 {inputObj[index].DueDate === null ? (
                   ''
-                ) : new Date(inputObj[index].DueDate!) < new Date() ? (
+                ) : inputObj[index].Status === 'Incompleted' ||
+                  inputObj[index].Status === 'Completed' ? (
+                  inputObj[index].CloseDate! === undefined ? (
+                    <div>
+                      <DateFormatter
+                        dateString={inputObj[index].DueDate!}
+                        task={inputObj[index]}
+                      />
+                    </div>
+                  ) : new Date(inputObj[index].DueDate!) >=
+                    new Date(inputObj[index].CloseDate!) ? (
+                    <div>
+                      <DateFormatter
+                        dateString={inputObj[index].DueDate!}
+                        task={inputObj[index]}
+                      />
+                    </div>
+                  ) : (
+                    <div className="overdue">
+                      <DateFormatter
+                        dateString={inputObj[index].DueDate!}
+                        task={inputObj[index]}
+                      />
+                    </div>
+                  )
+                ) : new Date() > new Date(inputObj[index].DueDate!) ? (
                   <div className="overdue">
-                    <DateFormatter dateString={inputObj[index].DueDate!} />
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
                   </div>
                 ) : (
                   <div>
-                    <DateFormatter dateString={inputObj[index].DueDate!} />
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
                   </div>
                 )}
               </>
@@ -442,13 +543,29 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
               onClickMenu={handleMenuClickStatus}
             />
           ),
+
           task: (
             <div onClick={() => OnNavigate(inputObj[index])}>
               <ParagraphExample
+                type="Task"
                 name={inputObj[index].TaskName}
                 task={inputObj[index]}
               />
             </div>
+          ),
+          project: (
+            <>
+              <div>
+                <ParagraphExample
+                  name={
+                    inputObj[index].Project
+                      ? inputObj[index].Project?.ProjectName
+                      : '-'
+                  }
+                  task={inputObj[index]}
+                />
+              </div>
+            </>
           ),
           priority: (
             <>
@@ -465,20 +582,51 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
             <>
               {inputObj[index].DueDate === null ? (
                 ''
-              ) : new Date(inputObj[index].DueDate!) < new Date() ? (
+              ) : inputObj[index].Status === 'Incompleted' ||
+                inputObj[index].Status === 'Completed' ? (
+                inputObj[index].CloseDate! === undefined ? (
+                  <div>
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
+                  </div>
+                ) : new Date(inputObj[index].DueDate!) >=
+                  new Date(inputObj[index].CloseDate!) ? (
+                  <div>
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
+                  </div>
+                ) : (
+                  <div className="overdue">
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
+                  </div>
+                )
+              ) : new Date() > new Date(inputObj[index].DueDate!) ? (
                 <div className="overdue">
-                  <DateFormatter dateString={inputObj[index].DueDate!} />
+                  <DateFormatter
+                    dateString={inputObj[index].DueDate!}
+                    task={inputObj[index]}
+                  />
                 </div>
               ) : (
                 <div>
-                  <DateFormatter dateString={inputObj[index].DueDate!} />
+                  <DateFormatter
+                    dateString={inputObj[index].DueDate!}
+                    task={inputObj[index]}
+                  />
                 </div>
               )}
             </>
           ),
           score: <p>{inputObj[index].Score ? inputObj[index].Score : '_'}</p>,
         })
-
+        console.log('----------------------', inputObj[index].Status)
         if (index < 3) {
           _dataSplice.push({
             key: inputObj[index]._id ? index.toString() : index.toString(),
@@ -496,10 +644,25 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
             task: (
               <div onClick={() => OnNavigate(inputObj[index])}>
                 <ParagraphExample
+                  type="Task"
                   name={inputObj[index].TaskName}
                   task={inputObj[index]}
                 />
               </div>
+            ),
+            project: (
+              <>
+                <div>
+                  <ParagraphExample
+                    name={
+                      inputObj[index].Project
+                        ? inputObj[index].Project?.ProjectName
+                        : '-'
+                    }
+                    task={inputObj[index]}
+                  />
+                </div>
+              </>
             ),
             priority: (
               <>
@@ -516,13 +679,44 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
               <>
                 {inputObj[index].DueDate === null ? (
                   ''
-                ) : new Date(inputObj[index].DueDate!) < new Date() ? (
+                ) : inputObj[index].Status === 'Incompleted' ||
+                  inputObj[index].Status === 'Completed' ? (
+                  inputObj[index].CloseDate! === undefined ? (
+                    <div>
+                      <DateFormatter
+                        dateString={inputObj[index].DueDate!}
+                        task={inputObj[index]}
+                      />
+                    </div>
+                  ) : new Date(inputObj[index].DueDate!) >=
+                    new Date(inputObj[index].CloseDate!) ? (
+                    <div>
+                      <DateFormatter
+                        dateString={inputObj[index].DueDate!}
+                        task={inputObj[index]}
+                      />
+                    </div>
+                  ) : (
+                    <div className="overdue">
+                      <DateFormatter
+                        dateString={inputObj[index].DueDate!}
+                        task={inputObj[index]}
+                      />
+                    </div>
+                  )
+                ) : new Date() > new Date(inputObj[index].DueDate!) ? (
                   <div className="overdue">
-                    <DateFormatter dateString={inputObj[index].DueDate!} />
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
                   </div>
                 ) : (
                   <div>
-                    <DateFormatter dateString={inputObj[index].DueDate!} />
+                    <DateFormatter
+                      dateString={inputObj[index].DueDate!}
+                      task={inputObj[index]}
+                    />
                   </div>
                 )}
               </>
@@ -531,6 +725,8 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
           })
         }
         countIndex++
+
+        console.log('----------------------', inputObj[index].Status)
       }
 
       setDataSplice(_dataSplice)
@@ -624,6 +820,16 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
     } catch (error) {}
   }, [])
 
+  /*  useEffect(() => {
+    //setLoading(true)
+    console.log('Ohhhh changging in task list')
+    //check for any change here
+    const filterReq: FilterRequest = {
+      filter: filterInit.filter,
+    }
+    dispatch(fetchFilterResult(filterReq))
+  }, [filterInit.filter]) */
+
   useEffect(() => {
     dispatch(fetchTasksAssignee(params))
   }, [loading])
@@ -689,7 +895,7 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
           <Col span={16}>
             <Input
               prefix={<FontAwesomeIcon icon={faSearch} />}
-              placeholder="Tìm task"
+              placeholder={SEARCH}
               //onPressEnter={(e) => onSearch(e)}
               style={{
                 width: '50%',

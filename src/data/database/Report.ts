@@ -36,3 +36,16 @@ export interface ScoreRankingResponse {
   Rank?: number
   UserCount?: number
 }
+
+export interface TrustScoreRequest {
+  assignee?: string
+  reporter?: string
+}
+
+export interface TrustScoreResponse {
+  Score: number
+  Department: string
+  FirstName: string
+  LastName: string
+  Rank: number
+}

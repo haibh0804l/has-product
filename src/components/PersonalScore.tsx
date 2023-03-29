@@ -6,7 +6,6 @@ import { getCookie } from 'typescript-cookie'
 import { PersonalScoreRequest } from '../data/database/Report'
 import { useAppDispatch, useAppSelector } from '../redux/app/hook'
 import { fetchPersonalScore } from '../redux/features/report/personalScoreSlice'
-import ExportMenu from './ExportMenu'
 
 interface PersonalScoreInput {
   reloadCount: number
@@ -17,20 +16,20 @@ const PersonalScore: React.FC<PersonalScoreInput> = ({
   reloadCount,
   department,
 }) => {
-  const [value, setValue] = useState<string | number>('This week')
+  const [value, setValue] = useState<string | number>('This month')
   const [hideTooltip, setHideTooltip] = useState(false)
   const [reload, setReload] = useState(reloadCount)
   const [personalScoreReq, setPersonalScoreReq] =
     useState<PersonalScoreRequest>({
       userId: getCookie('user_id')!,
       department: department,
-      baseOnWeek: 1,
+      baseOnMonth: 1,
     })
   const [score, setScore] = useState('')
   const [rank, setRank] = useState('')
   const [total, setTotal] = useState('')
   const [spin, setSpin] = useState(false)
-
+  const myScore = useAppSelector((state) => state.personalScore.score)
   const personalScore = useAppSelector((state) => state.personalScore)
   const dispatch = useAppDispatch()
 
@@ -112,12 +111,14 @@ const PersonalScore: React.FC<PersonalScoreInput> = ({
             float: 'right',
             marginBottom: '10px',
             width: 'auto',
+            // color: '#0e7490',
           }}
         >
           <p style={{ float: 'left', width: 'auto' }}></p>
           <Segmented
             options={['This week', 'This month', 'This year']}
             value={value}
+            style={{ background: '#9CA3AF', color: '#000000' }}
             onChange={(e) => {
               OnChangeFilter(e.toString())
             }}

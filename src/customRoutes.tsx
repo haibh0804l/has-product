@@ -1,7 +1,7 @@
 export const CustomRoutes = {
   // pages
   HomePage: { path: '/', name: 'Home' },
-  Dashboard: { path: '/dashboard', name: 'Home' },
+  Dashboard: { path: '/dashboard', name: 'Dashboard' },
   MyWork: { path: '/mywork', name: 'My Work' },
   //MyWork: { path: '/', name: 'My Work' },
   MySpace: { path: '/myspace', name: 'Home' },

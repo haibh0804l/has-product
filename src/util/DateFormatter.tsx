@@ -1,7 +1,11 @@
 import React from 'react'
+import { Tasks } from '../data/database/Tasks'
+import '../assets/css/index.css'
 
 interface DateString {
   dateString: Date
+  isDateNull?: boolean
+  task?: Tasks
 }
 
 const FormatSmallNum = (value: string) => {
@@ -31,26 +35,79 @@ const FormatDateNum = (value: string) => {
   return value
 }
 
-const DateFormatter: React.FC<DateString> = ({ dateString }) => {
+const DateFormatter: React.FC<DateString> = ({
+  dateString,
+  isDateNull,
+  task,
+}) => {
   //let userTimezoneOffset =  new Date(dateString).getTimezoneOffset() * 60000;
-  let noTimeZoneDate = new Date(new Date(dateString).getTime())
-  let da = noTimeZoneDate.toLocaleString('en-GB', { day: 'numeric' })
-  let mo = noTimeZoneDate.toLocaleString('en-GB', { month: 'numeric' })
-  let ho = noTimeZoneDate.toLocaleString('en-GB', { hour: '2-digit' })
-  let mi = noTimeZoneDate.toLocaleString('en-GB', { minute: '2-digit' })
-  let se = noTimeZoneDate.toLocaleString('en-GB', { second: '2-digit' })
-  da = FormatDateNum(da)
-  mo = FormatDateNum(mo)
-  ho = FormatSmallNum(ho)
-  mi = FormatSmallNum(mi)
-  se = FormatSmallNum(se)
-  let output = ''
-  if (ho === '23' && mi === '59' && se === '59') {
-    output = da + '/' + mo
+  if (task) {
+    //update task
+    if (!isDateNull) {
+      let noTimeZoneDate = new Date(new Date(dateString).getTime())
+      let da = noTimeZoneDate.toLocaleString('en-GB', { day: 'numeric' })
+      let mo = noTimeZoneDate.toLocaleString('en-GB', { month: 'numeric' })
+      let ho = noTimeZoneDate.toLocaleString('en-GB', { hour: '2-digit' })
+      let mi = noTimeZoneDate.toLocaleString('en-GB', { minute: '2-digit' })
+      let se = noTimeZoneDate.toLocaleString('en-GB', { second: '2-digit' })
+      da = FormatDateNum(da)
+      mo = FormatDateNum(mo)
+      ho = FormatSmallNum(ho)
+      mi = FormatSmallNum(mi)
+      se = FormatSmallNum(se)
+      let output = ''
+      if (ho === '23' && mi === '59' && se === '59') {
+        output = da + '/' + mo
+      } else {
+        output = da + '/' + mo + ' , ' + ho + ':' + mi
+      }
+
+      if (task.Status === 'Completed' || task.Status === 'Incompleted') {
+        if (task.CloseDate === undefined) {
+          return <>{output}</>
+        } else {
+          if (task.DueDate! >= task.CloseDate!) {
+            return <>{output}</>
+          } else {
+            return <div className="overdue">{output}</div>
+          }
+        }
+      } else {
+        if (task.DueDate! >= new Date()) {
+          return <div className="overdue">{output}</div>
+        } else {
+          return <>{output}</>
+        }
+      }
+    } else {
+      return <></>
+    }
   } else {
-    output = da + '/' + mo + ' , ' + ho + ':' + mi
+    //create task
+    if (!isDateNull) {
+      let noTimeZoneDate = new Date(new Date(dateString).getTime())
+      let da = noTimeZoneDate.toLocaleString('en-GB', { day: 'numeric' })
+      let mo = noTimeZoneDate.toLocaleString('en-GB', { month: 'numeric' })
+      let ho = noTimeZoneDate.toLocaleString('en-GB', { hour: '2-digit' })
+      let mi = noTimeZoneDate.toLocaleString('en-GB', { minute: '2-digit' })
+      let se = noTimeZoneDate.toLocaleString('en-GB', { second: '2-digit' })
+      da = FormatDateNum(da)
+      mo = FormatDateNum(mo)
+      ho = FormatSmallNum(ho)
+      mi = FormatSmallNum(mi)
+      se = FormatSmallNum(se)
+      let output = ''
+      if (ho === '23' && mi === '59' && se === '59') {
+        output = da + '/' + mo
+      } else {
+        output = da + '/' + mo + ' , ' + ho + ':' + mi
+      }
+
+      return <>{output}</>
+    } else {
+      return <></>
+    }
   }
-  return <>{output}</>
 }
 
 export default DateFormatter

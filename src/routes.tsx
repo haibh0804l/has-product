@@ -8,6 +8,7 @@ import { CustomRoutes } from './customRoutes'
 import Signin from './pages/authentication/Signin'
 import TaskDetails from './pages/TaskDetails'
 import Dashboard from './pages/Dashboard'
+import { getCookie } from 'typescript-cookie'
 
 const MainRoutes = () => {
   return (

@@ -50,7 +50,7 @@ const HistoryComponent: React.FC<HistoryComponentInput> = ({
           direction="vertical"
           style={{
             width: '100%',
-            height: '350px',
+            height: '380px',
             overflowY: 'scroll',
             overflowX: 'hidden',
           }}

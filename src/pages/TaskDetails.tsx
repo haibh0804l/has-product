@@ -35,11 +35,12 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   faPlus,
   faStar,
+  faTabletButton,
   faUserCheck,
   faUserPlus,
 } from '@fortawesome/free-solid-svg-icons'
 import { CustomRoutes } from '../customRoutes'
-import ReactQuill from 'react-quill'
+import ReactQuill, { Quill } from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { GetTasksById, InsertTask, UpdateTask } from '../data/tasksService'
 import { InputTasks } from '../data/database/InputTasks'
@@ -66,7 +67,7 @@ import { Status } from '../data/interface/Status'
 import GetStatusIgnoreList from '../util/StatusList'
 import HistoryComponent from '../components/History'
 import Comments from '../components/Comments'
-import { useAppDispatch } from '../redux/app/hook'
+import { useAppDispatch, useAppSelector } from '../redux/app/hook'
 import { fetchHistory } from '../redux/features/history/historySlice'
 import { AttachmentResponse } from '../data/database/Attachment'
 import axios from 'axios'
@@ -74,6 +75,12 @@ import { RemoveAttachment } from '../data/attachmentService'
 import { CheckExtension } from '../util/Extension'
 import io from 'socket.io-client'
 import { SocketContext } from '../context'
+import { Tab } from 'bootstrap'
+import { tab } from '@testing-library/user-event/dist/tab'
+import { TabPane } from 'react-bootstrap'
+import { getActiveElement } from '@testing-library/user-event/dist/utils'
+import { GetUsersByProject } from '../data/projectService'
+import { ProjectRequest } from '../data/database/Project'
 
 interface TaskData {
   taskData?: Tasks
@@ -121,11 +128,12 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
   const navigate = useNavigate()
 
   const location = useLocation()
-  const parentTask = location.state.parentTask
+  const [parentTask, setParentTask] = useState('')
   //const taskData = location.state.taskData as Tasks // Read values passed on state
   let assignee: Users[] = []
   const [loading, setLoading] = useState(true)
   const [editorValue, setEditorValue] = useState('')
+  const [summaryValue, setSummaryValue] = useState('')
   const [taskData, setTaskData] = useState<Tasks>({
     TaskName: '',
     Description: '',
@@ -141,6 +149,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
     Status: '',
     Reporter: {},
     GroupPath: '',
+    SummaryReport: '',
   })
 
   const [haveParentTask, setHaveParentTask] = useState(false)
@@ -150,6 +159,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
   const [reporterData, setReporterData] = useState<Users[]>([])
   const [getUsers, setGetUsers] = useState(false)
   const [saveBtn, setSaveBtn] = useState(false)
+  const [saveBtnSummary, setSaveBtnSummary] = useState(false)
   const subTask: Tasks[] = []
   const [subTasksComp, setSubTaskComp] = useState<SubTaskCompProp[]>([])
   const [subTaskIdList, setSubTaskIdList] = useState<string[]>([])
@@ -170,6 +180,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
     Status: 'In progress',
     Reporter: {},
     GroupPath: '',
+    SummaryReport: '',
   })
 
   const [miniModal, setMiniModal] = useState(false)
@@ -180,8 +191,12 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
   const [attachmentIdList, setAttachmentIdList] = useState<string[]>([])
   const socket = useContext(SocketContext)
   const [isConnected, setIsConnected] = useState(socket.connected)
+  const userInfo: Users = JSON.parse(getCookie('userInfo')!)
+  //console.log('USER_INFO : ', userInfo)
   const dispatch = useAppDispatch()
   const [saved, setSaved] = useState(false)
+  const [savedSummary, setSavedSummary] = useState(false)
+  const [disableSummary, setDisableSummary] = useState(true)
 
   const customRequest = (options: any) => {
     const data = new FormData()
@@ -308,6 +323,127 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
       ),
     },
   ]
+  const onChangeEditor = (
+    content: any,
+    delta: any,
+    source: any,
+    editor: any,
+  ) => {
+    //setEditorValue(parse(editor.getHTML()) as string)
+    setEditorValue(editor.getContents())
+    setSaved(!saved)
+  }
+
+  const onChangeSummaryEditor = (
+    content: any,
+    delta: any,
+    source: any,
+    editor: any,
+  ) => {
+    //setEditorValue(parse(editor.getHTML()) as string)
+    setSummaryValue(editor.getContents())
+    setSavedSummary(!savedSummary)
+  }
+
+  const SaveEditor = async () => {
+    setSaveBtn(false)
+    const inputTask: InputTasks = {
+      Description: JSON.stringify(editorValue),
+    }
+    await UpdateTask('/api/task/', taskData._id!, inputTask)
+    console.log('111111111111', editorValue)
+  }
+
+  const SaveSummaryEditor = async () => {
+    setSaveBtnSummary(false)
+    const inputTask: InputTasks = {
+      SummaryReport: JSON.stringify(summaryValue),
+    }
+    await UpdateTask('/api/task/', taskData._id!, inputTask)
+    //console.log('222222222222222', summaryValue)
+  }
+
+  const itemSummary: TabsProps['items'] = [
+    {
+      key: 'Description',
+      label: `Description`,
+      children: (
+        <>
+          <ReactQuill
+            preserveWhitespace={true}
+            modules={{
+              toolbar: [
+                [{ font: [] }, { size: ['small', false, 'large', 'huge'] }], // custom dropdown
+
+                ['bold', 'italic', 'underline', 'strike'],
+
+                [{ color: [] }, { background: [] }],
+                [{ list: 'ordered' }, { list: 'bullet' }],
+                ['image'],
+              ],
+            }}
+            value={editorValue}
+            onChange={onChangeEditor}
+            style={{
+              height: '260px',
+              overflow: 'inline',
+            }}
+            onFocus={() => setSaveBtn(true)}
+          ></ReactQuill>
+
+          {saveBtn === true && (
+            <Button
+              type="primary"
+              onClick={SaveEditor}
+              style={{ marginLeft: '16px' }}
+            >
+              Save
+            </Button>
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'Summarry',
+      label: `Summary Report`,
+      //disabled: disableSummary,
+      children: (
+        <>
+          <ReactQuill
+            preserveWhitespace={true}
+            modules={{
+              toolbar: [
+                [{ font: [] }, { size: ['small', false, 'large', 'huge'] }], // custom dropdown
+
+                ['bold', 'italic', 'underline', 'strike'],
+
+                [{ color: [] }, { background: [] }],
+                [{ list: 'ordered' }, { list: 'bullet' }],
+                ['image'],
+              ],
+            }}
+            value={summaryValue}
+            onChange={onChangeSummaryEditor}
+            style={{
+              height: '260px',
+              overflow: 'inline',
+            }}
+            onFocus={() => setSaveBtnSummary(true)}
+          ></ReactQuill>
+
+          {saveBtnSummary === true && (
+            <Button
+              type="primary"
+              onClick={SaveSummaryEditor}
+              style={{ marginLeft: '16px' }}
+            >
+              Save
+            </Button>
+          )}
+        </>
+      ),
+    },
+  ]
 
   const OnChange = (key: string) => {
     if (key === 'history') {
@@ -343,7 +479,6 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
   }
 
   const fetchData = useCallback(async () => {
-    if (parentTask) setHaveParentTask(true)
     setGetUsers(true)
 
     const data = await GetTasksById(
@@ -370,26 +505,75 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
     setFileList(attachments)
     setAttachmentIdList(data[0].Attachment)
 
+    //parent Task
+    if (data[0].ParentTask) {
+      setHaveParentTask(true)
+      setParentTask(data[0].ParentTask)
+    }
+
     let desc = ''
     try {
       desc = JSON.parse(data[0].Description)
     } catch (e) {}
     setEditorValue(desc)
 
-    const dataAssignee = await GetUserByType(
-      '/api/users/getReporterOrAssignee',
-      'assignee',
-      getCookie('user_id')?.toString(),
-    )
+    let summ = ''
+    try {
+      summ = JSON.parse(data[0].SummaryReport!)
+    } catch (e) {
+      /* if (userInfo.Role!.Level >= 3) {
+        setDisableSummary(true)
+      } */
+    }
+    //console.log('My report ' + data[0].SummaryReport!)
+    setSummaryValue(summ)
 
-    setAssigneeData(dataAssignee)
+    if (!data[0].Project) {
+      const dataAssignee = await GetUserByType(
+        '/api/users/getReporterOrAssignee',
+        'assignee',
+        getCookie('user_id')?.toString(),
+      )
+      setAssigneeData(dataAssignee)
 
-    const dataRp = await GetUserByType(
-      '/api/users/getReporterOrAssignee',
-      'reporter',
-      getCookie('user_id')?.toString(),
-    )
-    setReporterData(dataRp)
+      const dataRp = await GetUserByType(
+        '/api/users/getReporterOrAssignee',
+        'reporter',
+        getCookie('user_id')?.toString(),
+      )
+      setReporterData(dataRp)
+    } else {
+      if (Object.keys(data[0].Project).length === 0) {
+        //no properties
+        const dataAssignee = await GetUserByType(
+          '/api/users/getReporterOrAssignee',
+          'assignee',
+          getCookie('user_id')?.toString(),
+        )
+        setAssigneeData(dataAssignee)
+
+        const dataRp = await GetUserByType(
+          '/api/users/getReporterOrAssignee',
+          'reporter',
+          getCookie('user_id')?.toString(),
+        )
+        setReporterData(dataRp)
+      } else {
+        const dataAssignee = await GetUsersByProject(
+          data[0].Project._id!,
+          'assignee',
+        )
+        const dataRes = dataAssignee.data as Users[]
+
+        setAssigneeData(dataRes)
+
+        const dataRp = await GetUsersByProject(data[0].Project._id!, 'reporter')
+
+        const dataRpData = dataRp.data as Users[]
+
+        setReporterData(dataRpData)
+      }
+    }
 
     //console.log('All data ' + JSON.stringify(data[0].Subtask!))
     const scoreProp: ScoreCompProp = GetScoreReviewDisplay(
@@ -463,17 +647,9 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
       setIsConnected(false)
     })
 
-    /* socket.on('addCommentData', () => {
-      subTasksComp.length = 0
-      fetchData()
-
-      setGetUsers(false)
-    }) */
-
     return () => {
       socket.off('connection')
       socket.off('disconnect')
-      /* socket.off('addCommentData') */
     }
   }, [])
 
@@ -489,25 +665,18 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
 
     return () => clearTimeout(delayDebounceFn)
   }, [saved])
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      const inputTask: InputTasks = {
+        SummaryReport: JSON.stringify(summaryValue),
+      }
+      if (taskData._id) {
+        UpdateTask('/api/task/', taskData._id!, inputTask).then((r) => {})
+      }
+    }, 1000)
 
-  const SaveEditor = async () => {
-    setSaveBtn(false)
-    const inputTask: InputTasks = {
-      Description: JSON.stringify(editorValue),
-    }
-    await UpdateTask('/api/task/', taskData._id!, inputTask)
-  }
-
-  const onChangeEditor = (
-    content: any,
-    delta: any,
-    source: any,
-    editor: any,
-  ) => {
-    //setEditorValue(parse(editor.getHTML()) as string)
-    setEditorValue(editor.getContents())
-    setSaved(!saved)
-  }
+    return () => clearTimeout(delayDebounceFn)
+  }, [savedSummary])
 
   const onOkEvent = async (date: null | (Dayjs | null)) => {
     const dateStr = date?.toString()
@@ -606,6 +775,10 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
         _task.Priority = 'Medium'
       }
 
+      if (getCookie('projectId')) {
+        _task.Project = { _id: getCookie('projectId') } as ProjectRequest
+      }
+      _task.ParentTask = taskId.id as string
       //subTask.push(_task)
       const subTaskFilter = subTask.filter((e) => e._id === _task._id)
       if (subTaskFilter.length === 0) {
@@ -662,6 +835,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
         taskId={subTaskId}
         isEditDetail={true}
         parentTask={parentTask}
+        noLoad={true}
       />
     )
   }
@@ -700,10 +874,11 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
         width="92%"
         keyboard={false}
         footer={[]}
+        // style={{ top: '10vh' }}
       >
         {loading === false ? (
           <Layout>
-            <Header style={{ height: '20%' }}>
+            <Header style={{ height: '20%', marginLeft: '16px' }}>
               <Space direction="vertical" style={{ width: '100%' }}>
                 <ModalBreadCrumb />
                 {haveParentTask === true && (
@@ -878,66 +1053,25 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
                   }}
                 >
                   <Space direction="vertical" style={{ width: '100%' }}>
-                    <div style={{ height: '500px', overflow: 'auto' }}>
-                      <ReactQuill
-                        //ref={reactQuillRef}
-                        //id="bodyInput"
-
-                        preserveWhitespace={true}
-                        modules={{
-                          toolbar: [
-                            [
-                              { font: [] },
-                              { size: ['small', false, 'large', 'huge'] },
-                            ], // custom dropdown
-
-                            ['bold', 'italic', 'underline', 'strike'],
-
-                            [{ color: [] }, { background: [] }],
-
-                            /* [{ script: 'sub' }, { script: 'super' }], */
-
-                            /* [
-                        { header: 1 },
-                        { header: 2 }, 
-                        'blockquote',
-                        'code-block',
-                      ], */
-
-                            [
-                              { list: 'ordered' },
-                              { list: 'bullet' },
-                              /* { indent: '-1' },
-                        { indent: '+1' }, */
-                            ],
-
-                            /* [{ direction: 'rtl' }, { align: [] }],
-
-                      ['link', 'image', 'video', 'formula'],
-                        
-                      ['clean'] */
-                            ['image'],
-                          ],
-                        }}
-                        value={editorValue}
-                        onChange={onChangeEditor}
+                    <div style={{ height: '26.8rem', overflow: 'auto' }}>
+                      <Tabs
+                        defaultActiveKey="2"
+                        onChange={OnChange}
+                        items={itemSummary}
                         style={{
-                          height: '235px',
-                          overflow: 'inline',
+                          borderStyle: 'solid',
+                          borderWidth: 'thin',
+                          borderRadius: '4px',
+                          border: '1px solid #9CA3AF',
+                          minHeight: '450px',
+                          padding: '1%',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          //maxHeight: '450px',
+                          height: '100%',
                         }}
-                        onFocus={() => setSaveBtn(true)}
-                        //onBlur={() => SaveEditor()}
-                      ></ReactQuill>
+                      />
 
-                      {saveBtn === true && (
-                        <Button
-                          type="primary"
-                          onClick={SaveEditor}
-                          style={{ marginLeft: '10px' }}
-                        >
-                          Save
-                        </Button>
-                      )}
                       <br />
                       <br />
                       {assigneeData.length !== 0 ? (
@@ -952,7 +1086,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
                             disabled={!openSubTaskBtn}
                             style={{ width: '150px' }}
                           >
-                            Add subtask
+                            Subtask
                           </Button>
                         </Space>
                       ) : (

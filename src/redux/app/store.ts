@@ -13,6 +13,9 @@ import userInfoReducer from '../features/userInfo/userInfoSlice'
 import scoreRankingReducer from '../features/report/scoreRankingSlice'
 import personalScoreReducer from '../features/report/personalScoreSlice'
 import commentReducer from '../features/comment/commentSlice'
+import filterReducer from '../features/filter/filterSlice'
+import userValueReducer from '../features/userInfo/userValueSlice'
+import trustScoreReducer from '../features/report/trustScoreSlice'
 
 const store = configureStore({
   reducer: {
@@ -30,8 +33,35 @@ const store = configureStore({
     scoreRanking: scoreRankingReducer,
     personalScore: personalScoreReducer,
     comment: commentReducer,
+    filter: filterReducer,
+    userValue: userValueReducer,
+    trustScore: trustScoreReducer,
   },
-  // middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(logger),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        // Ignore these action types
+        ignoredActions: [
+          'filter/addDueDate',
+          'filter/addClosedDate',
+          'userValue/addDueDateValue',
+          'userValue/addCloseDateValue',
+        ],
+        // Ignore these field paths in all actions
+        //ignoredActionPaths: ['meta.arg', 'payload.timestamp'],
+        // Ignore these paths in the state
+        ignoredPaths: [
+          'filter.filter.dueDate.fromDate',
+          'filter.filter.dueDate.toDate',
+          'filter.filter.closeDate.fromDate',
+          'filter.filter.closeDate.toDate',
+          'userValue.dueDate.0',
+          'userValue.dueDate.1',
+          'userValue.closeDate.0',
+          'userValue.closeDate.1',
+        ],
+      },
+    }),
 })
 
 export default store
