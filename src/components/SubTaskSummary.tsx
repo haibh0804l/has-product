@@ -1,5 +1,3 @@
-import { faUserPlus } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Space } from 'antd'
 import Input from 'antd/es/input/Input'
 import { useState } from 'react'
@@ -8,7 +6,6 @@ import { Users } from '../data/database/Users'
 import { IGNORE_STT_DEFAULT } from '../util/ConfigText'
 import DropdownProps from './Dropdown'
 import IconGroup from './IconGroup'
-import UserListComp from './UserListComp'
 
 type SummaryInput = {
   task: Tasks

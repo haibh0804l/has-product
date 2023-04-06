@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFlag, faSquare } from '@fortawesome/free-solid-svg-icons'
 import { statusData } from '../data/statusData'
 import { UpdateTask } from '../data/tasksService'
-import { HIDE, UPDATE_FAIL, UPDATE_MODE } from '../util/ConfigText'
+import { HIDE, INSERT_MODE, UPDATE_FAIL, UPDATE_MODE } from '../util/ConfigText'
 import { Status } from '../data/interface/Status'
 import { Tasks } from '../data/database/Tasks'
 import { InputTasks } from '../data/database/InputTasks'
@@ -14,6 +14,8 @@ import ScoreComp from './ScoreComponent'
 import GetReviewAndScoreDisplay from '../util/ReviewAndScore'
 import { getCookie } from 'typescript-cookie'
 import { ScoreCompProp } from '../data/interface/ScoreCompProps'
+import { TaskDetailsProps } from '../data/interface/ComponentsJson'
+import Auth from '../util/Auth'
 
 interface Type {
   type: string
@@ -25,6 +27,7 @@ interface Type {
   onClickMenu?: (e: any) => void
   mode?: string
   task?: Tasks
+  disabled?: boolean
 }
 
 const DropdownProps: React.FC<Type> = ({
@@ -37,6 +40,7 @@ const DropdownProps: React.FC<Type> = ({
   onClickMenu,
   mode,
   task,
+  disabled,
 }) => {
   let items: MenuProps['items'] = []
   const [loading, setLoading] = useState(false)
@@ -46,6 +50,29 @@ const DropdownProps: React.FC<Type> = ({
   const [readOnly, setReadOnly] = useState(false)
   const [defaultScore, setDefaultScore] = useState(0)
   const [score, setScore] = useState(false)
+  const [disableComp, setDisableComp] = useState(false)
+
+  useEffect(() => {
+    if (mode && mode !== INSERT_MODE) {
+      if (task && task.TaskName !== '') {
+        let managers: string[] = []
+        if (task.Project) {
+          managers = task.Project.Manager!
+        }
+        const props: TaskDetailsProps = Auth(
+          getCookie('user_id')!,
+          task.Assignee[0]._id!,
+          task.Reporter._id!,
+          managers,
+        )
+        if (type === 'Status') {
+          setDisableComp(props.isStatusReadOnly)
+        } else {
+          setDisableComp(props.isStatusReadOnly)
+        }
+      }
+    }
+  }, [])
 
   const OnCloseFunc = () => {
     setMiniModal(false)
@@ -83,7 +110,7 @@ const DropdownProps: React.FC<Type> = ({
   function getPriorityValue(value: string) {
     setTxt(value)
     sessionStorage.setItem('priority' + id, value)
-    console.log('To priority ' + value)
+    //console.log('To priority ' + value)
     //call update service
     const inputTask: InputTasks = {
       Priority: value,
@@ -337,6 +364,7 @@ const DropdownProps: React.FC<Type> = ({
           }}
           trigger={['click']}
           onOpenChange={(e) => console.log}
+          disabled={disableComp}
         >
           <a onClick={(e) => e.preventDefault()}>
             {loading === false ? (

@@ -11,12 +11,17 @@ export const AddProject = async (project: ProjectRequest) => {
   return response
 }
 
-export const GetUsersByManager = async (managerId: string, type: string) => {
+export const GetUsersByManager = async (
+  userId: string,
+  userType: string,
+  type: string,
+) => {
   const serviceUrl = process.env.REACT_APP_API_PROJECT_GETUSERS!
   const response = await axios.post(
     serviceUrl,
     {
-      manager: managerId,
+      userId: userId,
+      userType: userType,
       type: type,
     },
     {

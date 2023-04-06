@@ -19,7 +19,14 @@ import {
   addCompleted,
   addTaskName,
 } from '../../redux/features/filter/filterSlice'
-import { ASSIGNEE, PROJECT, SEARCH, SELECT } from '../../util/ConfigText'
+import {
+  ASSIGNEE,
+  MANAGER,
+  PROJECT,
+  REPORTER,
+  SEARCH,
+  SELECT,
+} from '../../util/ConfigText'
 import ProjectCreation from '../ProjectCreation'
 import AssigneeSelector from '../selector/AssigneeSelector'
 import ProjectSelector from '../selector/ProjectSelector'
@@ -42,6 +49,15 @@ const SearchBar: React.FC<SearchBarInput> = ({ tabs, assignee }) => {
   const [searchValue, setSearchValue] = useState('')
   const [showCompleted, setShowCompleted] = useState(false)
   const [changeValue, setChangeValue] = useState(false)
+  const [spanFilterOption, setSpanFilterOption] = useState(1)
+
+  useEffect(() => {
+    if (tabs === '1') {
+      setSpanFilterOption(4)
+    } else {
+      setSpanFilterOption(1)
+    }
+  }, [tabs])
 
   const dispatch = useAppDispatch()
 
@@ -78,24 +94,30 @@ const SearchBar: React.FC<SearchBarInput> = ({ tabs, assignee }) => {
           />
         </Col>
         <Col span={7}>
-          <ProjectCreation />
+          {tabs !== '1' && tabs !== '2' && <ProjectCreation />}
         </Col>
-        <Col span={1}>
-          <FilterOptions />
+        <Col span={spanFilterOption}>
+          <FilterOptions tabs={tabs} />
         </Col>
         <Col span={3}>
           <RemoteSelectorProject
             placeHolder={SELECT + ' ' + PROJECT}
             initValue={initValue.project}
+            userType={
+              tabs === '1' ? ASSIGNEE : tabs === '2' ? REPORTER : MANAGER
+            }
           />
         </Col>
-        <Col span={3}>
-          <RemoteSelector
-            type={ASSIGNEE}
-            placeHolder={SELECT + ' ' + ASSIGNEE}
-            initValue={initValue.assignee}
-          />
-        </Col>
+        {tabs !== '1' && (
+          <Col span={3}>
+            <RemoteSelector
+              userType={tabs === '2' ? REPORTER : MANAGER}
+              type={ASSIGNEE}
+              placeHolder={SELECT + ' ' + ASSIGNEE}
+              initValue={initValue.assignee}
+            />
+          </Col>
+        )}
         <Col span={3}>
           <StatusSelector initValue={initValue.status} />
         </Col>

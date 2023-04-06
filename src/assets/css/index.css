@@ -44,6 +44,10 @@ p {
   /* height: 100%; */
 }
 
+.ant-table-body {
+  overflow-x: hidden;
+}
+
 .ant-card .ant-card-body {
   padding: 24px 24px 0px 24px;
 }

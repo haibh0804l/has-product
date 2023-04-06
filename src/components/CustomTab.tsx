@@ -17,6 +17,14 @@ import { getCookie } from 'typescript-cookie'
 import { fetchPersonalScore } from '../redux/features/report/personalScoreSlice'
 import { PersonalScoreRequest } from '../data/database/Report'
 import { Users } from '../data/database/Users'
+import { Navigate, useNavigate } from 'react-router-dom'
+import {
+  addAssignee,
+  addManager,
+  addReporter,
+  addTabs,
+} from '../redux/features/filter/filterSlice'
+import { revertAll } from '../util/ConfigText'
 
 interface TaskInput {
   assigneeTask: Tasks[]
@@ -31,6 +39,7 @@ const App: React.FC<TaskInput> = ({
   assigneeTaskNum,
   otherTaskNum,
 }) => {
+  const navigate = useNavigate()
   const userInfo: Users = JSON.parse(getCookie('userInfo')!)
   const role: Role = JSON.parse(getCookie('userInfo') as string).Role
   const [myScore, setMyScore] = useState('')
@@ -67,19 +76,36 @@ const App: React.FC<TaskInput> = ({
             ? _myScore.score[0].TotalScore.toString()
             : 'N/A',
         )
+        setScoreMonth(
+          _myScore.score[0].TotalScore
+            ? 'My score this month : ' + _myScore.score[0].TotalScore.toString()
+            : 'N/A',
+        )
       }
     }
   }, [_myScore.loading, _myScore.score.length])
   const scoreMonthHandle = 'My score this month : ' + myScore
-  const [scoreMonth, setScoreMonth] = useState(scoreMonthHandle)
+  const [scoreMonth, setScoreMonth] = useState(
+    'My score this month : ' + myScore,
+  )
   const OnChange = (key: string) => {
     sessionStorage.setItem('tab', key)
     if (key === '1') {
+      dispatch(revertAll())
+      dispatch(addAssignee([getCookie('user_id')!]))
+      dispatch(addTabs('1'))
       setScoreMonth('My score this month : ' + myScore)
       //scoreMonth = scoreMonthHandle
-    } else {
+    } else if (key === '2') {
+      dispatch(revertAll())
+      dispatch(addReporter([getCookie('user_id')!]))
+      dispatch(addTabs('2'))
       setScoreMonth('')
-      //scoreMonth = ''
+    } else {
+      dispatch(revertAll())
+      dispatch(addManager([getCookie('user_id')!]))
+      dispatch(addTabs('3'))
+      setScoreMonth('')
     }
   }
 

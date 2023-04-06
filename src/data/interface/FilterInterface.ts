@@ -21,6 +21,10 @@ export interface FilterInterface {
 export interface FilterRequest {
   filter: FilterInterface
 }
+export interface FilterRequestWithType {
+  filter: FilterInterface
+  type: string
+}
 
 export interface FilterResponse {
   ProjectId?: string

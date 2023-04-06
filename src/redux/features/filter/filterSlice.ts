@@ -1,10 +1,9 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { getCookie } from 'typescript-cookie'
 import { FilterService } from '../../../data/filterService'
 import {
   DateFilter,
   FilterInterface,
-  FilterRequest,
+  FilterRequestWithType,
   FilterResponse,
 } from '../../../data/interface/FilterInterface'
 import { revertAll } from '../../../util/ConfigText'
@@ -14,6 +13,7 @@ type InitialState = {
   filterResponse: FilterResponse[]
   error: string
   filter: FilterInterface
+  tabs?: string
 }
 
 const initialState: InitialState = {
@@ -22,7 +22,7 @@ const initialState: InitialState = {
     status: [],
     project: [],
     assignee: [],
-    manager: [getCookie('user_id')!],
+    manager: [],
     reporter: [],
     dueDate: {
       fromDate: undefined,
@@ -35,12 +35,15 @@ const initialState: InitialState = {
   loading: false,
   filterResponse: [],
   error: '',
+  tabs: sessionStorage.getItem('tab')?.toString()
+    ? sessionStorage.getItem('tab')?.toString()
+    : '1',
 }
 
 //Generated pending, fulfilled and rejected action type automatically
 export const fetchFilterResult = createAsyncThunk(
   'filter/fetchFilterResult',
-  async (params: FilterRequest) => {
+  async (params: FilterRequestWithType) => {
     const response = await FilterService(params)
     return response.data
   },
@@ -50,6 +53,9 @@ const filterSlice = createSlice({
   initialState: initialState,
   name: 'filter',
   reducers: {
+    addTabs: (state, action: PayloadAction<string>) => {
+      state.tabs = action.payload
+    },
     addManager: (state, action: PayloadAction<string[]>) => {
       state.filter.manager = action.payload
     },
@@ -105,6 +111,7 @@ const filterSlice = createSlice({
 })
 
 export const {
+  addTabs,
   addManager,
   addTaskName,
   addProject,

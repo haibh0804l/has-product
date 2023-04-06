@@ -12,6 +12,7 @@ type DueDateInput = {
   onChangeValue?: (e: React.ChangeEvent<HTMLInputElement>) => void
   mode?: string
   onOkEvent?: (date: null | (Dayjs | null)) => void
+  disabled?: boolean
 }
 
 const CustomDatePicker: React.FC<DueDateInput> = ({
@@ -19,6 +20,7 @@ const CustomDatePicker: React.FC<DueDateInput> = ({
   onChangeValue,
   mode,
   onOkEvent,
+  disabled,
 }) => {
   const [dueDate, setDueDate] = useState(dueDateInput)
 
@@ -36,8 +38,9 @@ const CustomDatePicker: React.FC<DueDateInput> = ({
 
   return (
     <>
-      <Space direction="horizontal">
+      <Space direction="horizontal" style={{ width: '100%' }}>
         <DatePicker
+          disabled={disabled}
           className={'datePicker'}
           //open={openDatePicker}
           //onOpenChange={DatePickerStatus}

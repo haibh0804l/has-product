@@ -1,27 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { Empty, Select, Space, Spin } from 'antd'
 import type { SelectProps } from 'antd/es/select'
 import debounce from 'lodash/debounce'
-import axios from 'axios'
 import { GetAllFilter } from '../../data/allUsersService'
 import { Users } from '../../data/database/Users'
-import { useAppDispatch, useAppSelector } from '../../redux/app/hook'
-import { ASSIGNEE, REPORTER } from '../../util/ConfigText'
-import {
-  addAssignee,
-  addProject,
-  addReporter,
-} from '../../redux/features/filter/filterSlice'
-import { SelectorValue } from '../../data/interface/SelectorValue'
-import {
-  addAssigneeValue,
-  addProjectValue,
-  addReporterValue,
-} from '../../redux/features/userInfo/userValueSlice'
-import { GetUsersByManager } from '../../data/projectService'
-import { getCookie } from 'typescript-cookie'
-import { responsesAreSame } from 'workbox-broadcast-update'
 import UserIcon from '../UserIcon'
+import { SelectorValue } from '../../data/interface/SelectorValue'
 
 interface RemoteSelectorInput {
   type: string

@@ -7,6 +7,7 @@ import { Button, Col, DatePicker, Divider, Popover, Row, Space } from 'antd'
 import { useEffect, useState } from 'react'
 import {
   ASSIGNEE,
+  MANAGER,
   PROJECT,
   REPORTER,
   revertAll,
@@ -33,6 +34,10 @@ import { RangePickerProps } from 'antd/es/date-picker'
 import RemoteSelectorProject from '../selector/RemoteSelectorProject'
 
 dayjs.extend(customParseFormat)
+
+interface FilterOptionInput {
+  tabs: string
+}
 
 interface MiniCompInput {
   condition: React.ReactNode
@@ -68,24 +73,10 @@ const rangePresets: {
   { label: 'Last 90 Days', value: [dayjs().add(-90, 'd'), dayjs()] },
 ]
 
-const Comp: React.FC = () => {
+const Comp: React.FC<FilterOptionInput> = ({ tabs }) => {
   const initValue = useAppSelector((state) => state.userValue)
   const dispatch = useAppDispatch()
   const { RangePicker } = DatePicker
-
-  /* useEffect(() => {
-    console.log('My init value ' + JSON.stringify(initValue))
-  }, [initValue])
-
-  const onClickSubmit = () => {
-    //search goes here
-    const filterRequest: FilterRequest = {
-      filter: _filter.filter,
-    }
-
-    console.log('Filter me ' + JSON.stringify(filterRequest))
-    dispatch(fetchFilterResult(filterRequest))
-  } */
 
   const onClearFilter = () => {
     //reset to init state
@@ -97,9 +88,12 @@ const Comp: React.FC = () => {
     dateString: [string, string] | string,
   ) => {
     if (value) {
+      let value0 = new Date(dateString[0] + 'T00:00:00Z')
+
+      let value1 = new Date(dateString[1] + 'T23:59:59Z')
       const dateFilter: DateFilter = {
-        fromDate: value[0]?.toDate(),
-        toDate: value[1]?.toDate(),
+        fromDate: value0,
+        toDate: value1,
       }
       dispatch(addDueDateValue(value))
       dispatch(addDueDate(dateFilter))
@@ -118,9 +112,12 @@ const Comp: React.FC = () => {
     dateString: [string, string] | string,
   ) => {
     if (value) {
+      let value0 = new Date(dateString[0] + 'T00:00:00Z')
+
+      let value1 = new Date(dateString[1] + 'T23:59:59Z')
       const dateFilter: DateFilter = {
-        fromDate: value[0]?.toDate(),
-        toDate: value[1]?.toDate(),
+        fromDate: value0,
+        toDate: value1,
       }
       dispatch(addCloseDateValue(value))
       dispatch(addClosedDate(dateFilter))
@@ -149,29 +146,38 @@ const Comp: React.FC = () => {
           <RemoteSelectorProject
             placeHolder={SELECT + ' ' + PROJECT}
             initValue={initValue.project}
+            userType={
+              tabs === '1' ? ASSIGNEE : tabs === '2' ? REPORTER : MANAGER
+            }
           />
         }
       />
-      <MiniComp
-        condition={<p>Assignee</p>}
-        value={
-          <RemoteSelector
-            type={ASSIGNEE}
-            placeHolder={SELECT + ' ' + ASSIGNEE}
-            initValue={initValue.assignee}
-          />
-        }
-      />
-      <MiniComp
-        condition={<p>Reporter</p>}
-        value={
-          <RemoteSelector
-            type={REPORTER}
-            placeHolder={SELECT + ' ' + REPORTER}
-            initValue={initValue.reporter}
-          />
-        }
-      />
+      {tabs !== '1' && (
+        <MiniComp
+          condition={<p>Assignee</p>}
+          value={
+            <RemoteSelector
+              userType={tabs === '2' ? REPORTER : MANAGER}
+              type={ASSIGNEE}
+              placeHolder={SELECT + ' ' + ASSIGNEE}
+              initValue={initValue.assignee}
+            />
+          }
+        />
+      )}
+      {tabs !== '1' && tabs !== '2' && (
+        <MiniComp
+          condition={<p>Reporter</p>}
+          value={
+            <RemoteSelector
+              userType={tabs === '2' ? REPORTER : MANAGER}
+              type={REPORTER}
+              placeHolder={SELECT + ' ' + REPORTER}
+              initValue={initValue.reporter}
+            />
+          }
+        />
+      )}
       <MiniComp
         condition={<p>Status</p>}
         value={<StatusSelector initValue={initValue.status} />}
@@ -219,14 +225,14 @@ const Comp: React.FC = () => {
   )
 }
 
-const FilterOptions = () => {
+const FilterOptions: React.FC<FilterOptionInput> = ({ tabs }) => {
   const [openFilter, setOpenFilter] = useState(false)
 
   return (
     <Popover
       placement="bottomLeft"
       title="Filter"
-      content={<Comp />}
+      content={<Comp tabs={tabs} />}
       trigger="click"
     >
       {!openFilter ? (

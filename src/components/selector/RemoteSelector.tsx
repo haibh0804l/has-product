@@ -24,6 +24,7 @@ import { ToLowerCaseNonAccentVietnamese } from '../../util/FormatText'
 
 interface RemoteSelectorInput {
   type: string
+  userType: string
   placeHolder: string
   initValue: SelectorValue[]
   disabled?: boolean
@@ -90,8 +91,9 @@ function DebounceSelect<
 async function fetchUserList(
   username: string,
   type: string,
+  userType: string,
 ): Promise<SelectorValue[]> {
-  return GetUsersByManager(getCookie('user_id')!, type)
+  return GetUsersByManager(getCookie('user_id')!, userType, type)
     .then((response) => response.data as Users[])
     .then((body) =>
       body
@@ -109,6 +111,7 @@ async function fetchUserList(
 
 const RemoteSelector: React.FC<RemoteSelectorInput> = ({
   type,
+  userType,
   placeHolder,
   initValue,
 }) => {
@@ -142,7 +145,7 @@ const RemoteSelector: React.FC<RemoteSelectorInput> = ({
       mode="multiple"
       value={value}
       placeholder={placeHolder}
-      fetchOptions={(e) => fetchUserList(e, type)}
+      fetchOptions={(e) => fetchUserList(e, type, userType)}
       onChange={(newValue) => {
         onChangeSelector(newValue as SelectorValue[])
       }}

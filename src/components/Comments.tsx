@@ -20,6 +20,7 @@ interface CompInput {
 
 interface CommnentsInput {
   taskId: string
+  disabled?: boolean
 }
 
 const Comp: React.FC<CompInput> = ({ user, comment, createdDate }) => {
@@ -78,7 +79,7 @@ const Comp: React.FC<CompInput> = ({ user, comment, createdDate }) => {
   )
 }
 
-const Comments: React.FC<CommnentsInput> = ({ taskId }) => {
+const Comments: React.FC<CommnentsInput> = ({ taskId, disabled }) => {
   const [dummyInput, setDummyInput] = useState<CommentResponse[]>([])
   const socket = useContext(SocketContext)
   const user = useAppSelector((state) => state.userInfo.user)
@@ -181,21 +182,25 @@ const Comments: React.FC<CommnentsInput> = ({ taskId }) => {
           height: 'auto',
         }}
       >
-        <Input
-          style={{ float: 'left', width: '91%' }}
-          placeholder="Comment"
-          value={commentInput}
-          onChange={(e) => setCommentInput(e.target.value)}
-          onPressEnter={() => {
-            AddComp()
-          }}
-        />
-        <Button
-          type="primary"
-          icon={<SendOutlined />}
-          style={{ float: 'right', width: '8%', marginLeft: '1%' }}
-          onClick={() => AddComp()}
-        />
+        {!disabled ? (
+          <>
+            <Input
+              style={{ float: 'left', width: '91%' }}
+              placeholder="Comment"
+              value={commentInput}
+              onChange={(e) => setCommentInput(e.target.value)}
+              onPressEnter={() => {
+                AddComp()
+              }}
+            />
+            <Button
+              type="primary"
+              icon={<SendOutlined />}
+              style={{ float: 'right', width: '8%', marginLeft: '1%' }}
+              onClick={() => AddComp()}
+            />
+          </>
+        ) : null}
       </div>
     </div>
   )

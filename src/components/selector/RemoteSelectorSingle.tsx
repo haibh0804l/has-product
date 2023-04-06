@@ -20,6 +20,7 @@ interface RemoteSelectorInput {
   mode?: 'multiple' | 'tags' | undefined
   isProjectFixed?: boolean
   projectId?: string
+  isProjectChange?: boolean
 }
 
 export interface DebounceSelectProps<ValueType = any>
@@ -228,6 +229,7 @@ const RemoteSelectorSingle: React.FC<RemoteSelectorInput> = ({
   onChangeSelectorFunc,
   isProjectFixed,
   projectId,
+  isProjectChange,
 }) => {
   const [value, setValue] = useState<SelectorValue>()
 
@@ -236,6 +238,12 @@ const RemoteSelectorSingle: React.FC<RemoteSelectorInput> = ({
       setValue(initValue)
     }
   }, [initValue])
+
+  useEffect(() => {
+    if (type !== PROJECT) {
+      setValue(undefined)
+    }
+  }, [isProjectChange])
 
   const onChangeSelector = (newValue: SelectorValue) => {
     setValue(newValue)

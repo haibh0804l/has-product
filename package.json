@@ -33,6 +33,7 @@
     "react-scroll-to-bottom": "^4.2.0",
     "redux-logger": "^3.0.6",
     "socket.io-client": "^4.6.1",
+    "source-map-explorer": "^2.5.3",
     "typescript-cookie": "^1.0.4",
     "web-vitals": "^2.1.4",
     "workbox-background-sync": "^6.5.4",
@@ -49,6 +50,7 @@
     "workbox-streams": "^6.5.4"
   },
   "scripts": {
+    "analyze": "source-map-explorer 'build/static/js/*.js'",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",

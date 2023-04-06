@@ -24,6 +24,7 @@ interface RemoteSelectorInput {
   initValue: SelectorValue[]
   placeHolder: string
   disabled?: boolean
+  userType: string
   onChangeSelectorFunc?: (e: any) => void
 }
 
@@ -83,8 +84,11 @@ function DebounceSelect<
 }
 
 // Usage of DebounceSelect
-async function fetchUserList(input: string): Promise<SelectorValue[]> {
-  return GetProject(getCookie('user_id')!, MANAGER)
+async function fetchUserList(
+  input: string,
+  userType: string,
+): Promise<SelectorValue[]> {
+  return GetProject(getCookie('user_id')!, userType)
     .then((response) => response.data as ProjectRepsonse[])
     .then((body) =>
       body
@@ -103,6 +107,7 @@ async function fetchUserList(input: string): Promise<SelectorValue[]> {
 const RemoteSelectorProject: React.FC<RemoteSelectorInput> = ({
   initValue,
   placeHolder,
+  userType,
 }) => {
   const dispatch = useAppDispatch()
   const [value, setValue] = useState<SelectorValue[]>(initValue)
@@ -131,7 +136,7 @@ const RemoteSelectorProject: React.FC<RemoteSelectorInput> = ({
       mode="multiple"
       value={value}
       placeholder={placeHolder}
-      fetchOptions={(e) => fetchUserList(e)}
+      fetchOptions={(e) => fetchUserList(e, userType)}
       onChange={(newValue) => {
         onChangeSelector(newValue as SelectorValue[])
       }}

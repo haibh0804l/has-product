@@ -4,11 +4,20 @@ import { useEffect, useState } from 'react'
 import { getCookie } from 'typescript-cookie'
 import { ProjectRequest } from '../data/database/Project'
 import { Users } from '../data/database/Users'
-import { FilterRequest } from '../data/interface/FilterInterface'
+import {
+  FilterRequest,
+  FilterRequestWithType,
+} from '../data/interface/FilterInterface'
 import { AddProject } from '../data/projectService'
 import { useAppDispatch, useAppSelector } from '../redux/app/hook'
 import { fetchFilterResult } from '../redux/features/filter/filterSlice'
-import { ASSIGNEE, MANAGER, REPORTER, SELECT } from '../util/ConfigText'
+import {
+  ASSIGNEE,
+  MANAGER,
+  PROJECT,
+  REPORTER,
+  SELECT,
+} from '../util/ConfigText'
 import Selector from './selector/Selector'
 import UserSelector from './selector/UserSelector'
 
@@ -80,8 +89,9 @@ const ProjectModal: React.FC<ProjectModalInput> = ({
       createDate: new Date(),
     }
 
-    const filterReq: FilterRequest = {
+    const filterReq: FilterRequestWithType = {
       filter: filter,
+      type: PROJECT,
     }
 
     await AddProject(project)

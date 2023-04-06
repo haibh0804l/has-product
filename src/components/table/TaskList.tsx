@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { memo, useCallback, useEffect, useState } from 'react'
 import {
   Table,
   Layout,
@@ -23,16 +23,19 @@ import { CustomRoutes } from '../../customRoutes'
 import { Status } from '../../data/interface/Status'
 import { getCookie } from 'typescript-cookie'
 import { useAppDispatch, useAppSelector } from '../../redux/app/hook'
-import { Params } from '../../data/interface/task'
-import { fetchTasksAssignee } from '../../redux/features/tasks/assigneeTaskSlice'
-import { myTaskChange } from '../../redux/features/myTask/myTaskSlice'
 import GetStatusIgnoreList from '../../util/StatusList'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faLink, faSearch } from '@fortawesome/free-solid-svg-icons'
-import { ToLowerCaseNonAccentVietnamese } from '../../util/FormatText'
-import { SEARCH } from '../../util/ConfigText'
-import { fetchFilterResult } from '../../redux/features/filter/filterSlice'
-import { FilterRequest } from '../../data/interface/FilterInterface'
+import { ASSIGNEE, SEARCH } from '../../util/ConfigText'
+import {
+  FilterRequest,
+  FilterRequestWithType,
+} from '../../data/interface/FilterInterface'
+import { SearchBar } from '../filter/SearchBar'
+import {
+  addAssignee,
+  addManager,
+  fetchFilterResult,
+} from '../../redux/features/filter/filterSlice'
+import { myTaskChange } from '../../redux/features/myTask/myTaskSlice'
 
 interface DataType {
   key: string
@@ -65,24 +68,13 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
   const [input, setInput] = useState<Tasks[]>([])
 
   const [isShowMore, setShowMore] = useState(collapseShowMore)
-  const [searchValue, setSearchValue] = useState(
-    sessionStorage.getItem('searchValueTaskList')
-      ? sessionStorage.getItem('searchValueTaskList')
-      : '',
-  )
   const [showCompleted, setShowCompleted] = useState(
     sessionStorage.getItem('showClosedTaskList') === 'true',
   )
   const [dataInput, setDataInput] = useState<DataType[]>([])
   const [dataSplice, setDataSplice] = useState<DataType[]>([])
-  const task = useAppSelector((state) => state.assigneeTasks)
   const filterInit = useAppSelector((state) => state.filter)
   const dispatch = useAppDispatch()
-  const params: Params = {
-    serviceUrl: '',
-    type: getCookie('user_id')?.toString()!,
-    //userId: getCookie('user_id')?.toString(),
-  }
 
   const columns: ColumnsType<DataType> = [
     {
@@ -101,29 +93,19 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
       dataIndex: 'project',
       width: '20vw',
     },
-    /* {
-    title: 'Path',
-    dataIndex: 'path',
-    width: '14vw',
-  }, */
     {
       title: 'Priority',
       dataIndex: 'priority',
       align: 'center',
       width: '13vw',
     },
-    /* {
-    title: 'Start date',
-    dataIndex: 'startDate',
-    width: '10vw',
-  }, */
     {
       title: 'Due date',
       dataIndex: 'dueDate',
       width: '10vw',
     },
     {
-      ...(showCompleted === true
+      ...(showCompleted
         ? {
             title: 'Score',
             dataIndex: 'score',
@@ -168,14 +150,24 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
           data.DueDate !== null &&
           new Date(data.DueDate!).getTime() >= new Date().getTime(),
       )
-      .concat(
-        inputObj.filter(
-          (data) =>
-            data.PriorityNum === 1 &&
-            data.DueDate !== null &&
-            new Date(data.DueDate!).getTime() < new Date().getTime(),
-        ),
+      .sort(
+        (a, b) =>
+          new Date(a.DueDate!).getTime() - new Date(b.DueDate!).getTime(),
       )
+      .concat(
+        inputObj
+          .filter(
+            (data) =>
+              data.PriorityNum === 1 &&
+              data.DueDate !== null &&
+              new Date(data.DueDate!).getTime() < new Date().getTime(),
+          )
+          .sort(
+            (a, b) =>
+              new Date(a.DueDate!).getTime() - new Date(b.DueDate!).getTime(),
+          ),
+      )
+
       .concat(
         inputObj.filter(
           (data) => data.PriorityNum === 1 && data.DueDate === null,
@@ -189,13 +181,22 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
           data.DueDate !== null &&
           new Date(data.DueDate!).getTime() >= new Date().getTime(),
       )
+      .sort(
+        (a, b) =>
+          new Date(a.DueDate!).getTime() - new Date(b.DueDate!).getTime(),
+      )
       .concat(
-        inputObj.filter(
-          (data) =>
-            data.PriorityNum === 2 &&
-            data.DueDate !== null &&
-            new Date(data.DueDate!).getTime() < new Date().getTime(),
-        ),
+        inputObj
+          .filter(
+            (data) =>
+              data.PriorityNum === 2 &&
+              data.DueDate !== null &&
+              new Date(data.DueDate!).getTime() < new Date().getTime(),
+          )
+          .sort(
+            (a, b) =>
+              new Date(a.DueDate!).getTime() - new Date(b.DueDate!).getTime(),
+          ),
       )
       .concat(
         inputObj.filter(
@@ -210,13 +211,22 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
           data.DueDate !== null &&
           new Date(data.DueDate!).getTime() >= new Date().getTime(),
       )
+      .sort(
+        (a, b) =>
+          new Date(a.DueDate!).getTime() - new Date(b.DueDate!).getTime(),
+      )
       .concat(
-        inputObj.filter(
-          (data) =>
-            data.PriorityNum === 3 &&
-            data.DueDate !== null &&
-            new Date(data.DueDate!).getTime() < new Date().getTime(),
-        ),
+        inputObj
+          .filter(
+            (data) =>
+              data.PriorityNum === 3 &&
+              data.DueDate !== null &&
+              new Date(data.DueDate!).getTime() < new Date().getTime(),
+          )
+          .sort(
+            (a, b) =>
+              new Date(a.DueDate!).getTime() - new Date(b.DueDate!).getTime(),
+          ),
       )
       .concat(
         inputObj.filter(
@@ -231,13 +241,22 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
           data.DueDate !== null &&
           new Date(data.DueDate!).getTime() >= new Date().getTime(),
       )
+      .sort(
+        (a, b) =>
+          new Date(a.DueDate!).getTime() - new Date(b.DueDate!).getTime(),
+      )
       .concat(
-        inputObj.filter(
-          (data) =>
-            data.PriorityNum === 4 &&
-            data.DueDate !== null &&
-            new Date(data.DueDate!).getTime() < new Date().getTime(),
-        ),
+        inputObj
+          .filter(
+            (data) =>
+              data.PriorityNum === 4 &&
+              data.DueDate !== null &&
+              new Date(data.DueDate!).getTime() < new Date().getTime(),
+          )
+          .sort(
+            (a, b) =>
+              new Date(a.DueDate!).getTime() - new Date(b.DueDate!).getTime(),
+          ),
       )
       .concat(
         inputObj.filter(
@@ -252,13 +271,22 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
           data.DueDate !== null &&
           new Date(data.DueDate!).getTime() >= new Date().getTime(),
       )
+      .sort(
+        (a, b) =>
+          new Date(a.DueDate!).getTime() - new Date(b.DueDate!).getTime(),
+      )
       .concat(
-        inputObj.filter(
-          (data) =>
-            data.PriorityNum === 5 &&
-            data.DueDate !== null &&
-            new Date(data.DueDate!).getTime() < new Date().getTime(),
-        ),
+        inputObj
+          .filter(
+            (data) =>
+              data.PriorityNum === 5 &&
+              data.DueDate !== null &&
+              new Date(data.DueDate!).getTime() < new Date().getTime(),
+          )
+          .sort(
+            (a, b) =>
+              new Date(a.DueDate!).getTime() - new Date(b.DueDate!).getTime(),
+          ),
       )
       .concat(
         inputObj.filter(
@@ -393,22 +421,21 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
               />
             ),
             project: (
-              <>
-                <div>
-                  <ParagraphExample
-                    name={
-                      inputObj[index].Project
-                        ? inputObj[index].Project?.ProjectName
-                        : '-'
-                    }
-                    task={inputObj[index]}
-                  />
-                </div>
-              </>
+              <ParagraphExample
+                name={
+                  inputObj[index].Project
+                    ? inputObj[index].Project?.ProjectName
+                    : '-'
+                }
+                task={inputObj[index]}
+              />
             ),
             task: (
               <>
-                <div onClick={() => OnNavigate(inputObj[index])}>
+                <div
+                  onClick={() => OnNavigate(inputObj[index])}
+                  style={{ width: 'auto' }}
+                >
                   <ParagraphExample
                     type="Task"
                     name={inputObj[index].TaskName}
@@ -483,7 +510,7 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
       setDataSplice(_dataSplice)
       setDataInput(_data)
     } else {
-      if (!task.loading && task.tasks.length) {
+      if (!filterInit.loading) {
         setDataInput([])
         setInput([])
         setDataSplice([])
@@ -626,7 +653,6 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
           ),
           score: <p>{inputObj[index].Score ? inputObj[index].Score : '_'}</p>,
         })
-        console.log('----------------------', inputObj[index].Status)
         if (index < 3) {
           _dataSplice.push({
             key: inputObj[index]._id ? index.toString() : index.toString(),
@@ -725,14 +751,12 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
           })
         }
         countIndex++
-
-        console.log('----------------------', inputObj[index].Status)
       }
 
       setDataSplice(_dataSplice)
       setDataInput(_data)
     } else {
-      if (!task.loading && task.tasks.length) {
+      if (!filterInit.loading && filterInit.filterResponse.length) {
         setDataInput([])
         setInput([])
         setDataSplice([])
@@ -744,74 +768,9 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
     setLoading(true)
   }
 
-  const Sorting = () => {
-    let value = searchValue!
-    if (value !== '') {
-      if (showCompleted === false) {
-        const sortedTask: Tasks[] = JSON.parse(JSON.stringify(task.tasks))
-        const inputObjFilter = sortedTask.filter(
-          (dataOtherEle) =>
-            dataOtherEle.Status.toLowerCase() !== 'Completed'.toLowerCase() &&
-            //dataOtherEle.Status.toLowerCase() !== 'Done'.toLowerCase() &&
-            dataOtherEle.Status.toLowerCase() !== 'Incompleted'.toLowerCase(),
-        )
-        const sortResult: Tasks[] = inputObjFilter.filter((x) =>
-          ToLowerCaseNonAccentVietnamese(x.TaskName).includes(
-            ToLowerCaseNonAccentVietnamese(value),
-          ),
-        )
-        if (sortResult.length === 0) {
-          ReorderTask([])
-        } else {
-          ReorderTask(sortResult)
-        }
-      } else {
-        const sortedTask: Tasks[] = JSON.parse(JSON.stringify(task.tasks))
-        const inputObjFilter = sortedTask.filter(
-          (dataOtherEle) =>
-            dataOtherEle.Status.toLowerCase() === 'Completed'.toLowerCase() ||
-            //dataOtherEle.Status.toLowerCase() !== 'Done'.toLowerCase() &&
-            dataOtherEle.Status.toLowerCase() === 'Incompleted'.toLowerCase(),
-        )
-
-        const sortResult: Tasks[] = inputObjFilter.filter((x) =>
-          ToLowerCaseNonAccentVietnamese(x.TaskName).includes(
-            ToLowerCaseNonAccentVietnamese(value),
-          ),
-        )
-        if (sortResult.length === 0) {
-          ReorderClosedTasks([])
-        } else {
-          ReorderClosedTasks(sortResult)
-        }
-
-        //dispatch(myTaskChange(inputObjFilter.length))
-      }
-    } else {
-      if (showCompleted === false) {
-        const sortedTask: Tasks[] = JSON.parse(JSON.stringify(task.tasks))
-        const inputObjFilter = sortedTask.filter(
-          (dataOtherEle) =>
-            dataOtherEle.Status.toLowerCase() !== 'Completed'.toLowerCase() &&
-            //dataOtherEle.Status.toLowerCase() !== 'Done'.toLowerCase() &&
-            dataOtherEle.Status.toLowerCase() !== 'Incompleted'.toLowerCase(),
-        )
-        ReorderTask(inputObjFilter)
-      } else {
-        const sortedTask: Tasks[] = JSON.parse(JSON.stringify(task.tasks))
-        const inputObjFilter = sortedTask.filter(
-          (dataOtherEle) =>
-            dataOtherEle.Status.toLowerCase() === 'Completed'.toLowerCase() ||
-            //dataOtherEle.Status.toLowerCase() !== 'Done'.toLowerCase() &&
-            dataOtherEle.Status.toLowerCase() === 'Incompleted'.toLowerCase(),
-        )
-        ReorderClosedTasks(inputObjFilter)
-        //dispatch(myTaskChange(inputObjFilter.length))
-      }
-    }
-  }
-
   useEffect(() => {
+    dispatch(addManager([]))
+    dispatch(addAssignee([getCookie('user_id')!]))
     try {
       const s = refresh.refresh
       if (refresh.refresh === true) {
@@ -820,49 +779,54 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
     } catch (error) {}
   }, [])
 
-  /*  useEffect(() => {
-    //setLoading(true)
-    console.log('Ohhhh changging in task list')
-    //check for any change here
-    const filterReq: FilterRequest = {
-      filter: filterInit.filter,
+  useEffect(() => {
+    setLoading(true)
+    //generate dummyJson in here
+    if (filterInit.tabs === '1') {
+      if (!filterInit.loading) {
+        if (filterInit.filterResponse.length) {
+          if (filterInit.filterResponse.length === 0) {
+            setInput([])
+            ReorderTask([])
+            setLoading(false)
+          } else {
+            if (filterInit.filter.completed) {
+              setShowCompleted(true)
+              setInput(filterInit.filterResponse as Tasks[])
+              ReorderClosedTasks(filterInit.filterResponse as Tasks[])
+              setLoading(false)
+            } else {
+              setShowCompleted(false)
+              setInput(filterInit.filterResponse as Tasks[])
+              ReorderTask(filterInit.filterResponse as Tasks[])
+              setLoading(false)
+            }
+            dispatch(myTaskChange(filterInit.filterResponse.length))
+          }
+        } else {
+          setInput([])
+          ReorderTask([])
+          setLoading(false)
+        }
+      }
     }
-    dispatch(fetchFilterResult(filterReq))
-  }, [filterInit.filter]) */
+  }, [filterInit.loading, filterInit.filterResponse.length])
 
   useEffect(() => {
-    dispatch(fetchTasksAssignee(params))
-  }, [loading])
-
-  useEffect(() => {
-    dispatch(myTaskChange(input.length))
-  }, [dataInput.length])
-
-  useEffect(() => {
-    if (!task.loading && task.tasks.length) {
-      Sorting()
-    }
-    setLoading(false)
-  }, [task.loading, task.tasks.length])
-
-  useEffect(() => {
-    //let value = searchValue!
     const delayDebounceFn = setTimeout(() => {
-      Sorting()
+      if (filterInit.tabs === '1') {
+        setLoading(true)
+        //check for any change here
+        const filterReq: FilterRequestWithType = {
+          filter: filterInit.filter,
+          type: ASSIGNEE,
+        }
+        dispatch(fetchFilterResult(filterReq))
+      }
     }, 200)
 
     return () => clearTimeout(delayDebounceFn)
-  }, [showCompleted])
-
-  useEffect(() => {
-    sessionStorage.setItem('searchValueTaskList', searchValue!)
-    //let value = searchValue!
-    const delayDebounceFn = setTimeout(() => {
-      Sorting()
-    }, 200)
-
-    return () => clearTimeout(delayDebounceFn)
-  }, [searchValue])
+  }, [filterInit.filter, filterInit.tabs])
 
   let noButton = false
   const ShowMore = () => {
@@ -890,70 +854,33 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
 
   return (
     <>
-      <Layout>
-        <Row>
-          <Col span={16}>
-            <Input
-              prefix={<FontAwesomeIcon icon={faSearch} />}
-              placeholder={SEARCH}
-              //onPressEnter={(e) => onSearch(e)}
-              style={{
-                width: '50%',
-                border: 'none',
-                float: 'left',
-                marginBottom: '15px',
-              }}
-              value={searchValue!}
-              //defaultValue={inputValue}
-              //onChange={(e) => setInputValue(e.target.value)}
-              onChange={(e) => {
-                setSearchValue(e.target.value)
-              }}
-              //onBlur={(e) => InputChange(e.target.value)}
-              allowClear
-            />
-          </Col>
-          <Col span={8}>
-            <Checkbox
-              onChange={(e) => {
-                const saveBoolean: boolean = e.target.checked
-                sessionStorage.setItem(
-                  'showClosedTaskList',
-                  Boolean(saveBoolean).toString(),
-                )
-
-                setShowCompleted(!showCompleted)
-              }}
-              style={{ float: 'right' }}
-              defaultChecked={
-                sessionStorage.getItem('showClosedTaskList') === 'true'
-              }
-            >
-              Show closed tasks
-            </Checkbox>
-          </Col>
-        </Row>
-
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <SearchBar tabs={'1'} projects={[]} status={[]} />
         {loading === false ? (
-          <Table
-            pagination={false}
-            columns={columns}
-            dataSource={isShowMore === true ? dataSplice : dataInput}
-            scroll={{ y: 500, scrollToFirstRowOnChange: false }}
-            size="middle"
-          />
+          <>
+            <Table
+              pagination={false}
+              columns={columns}
+              dataSource={isShowMore === true ? dataSplice : dataInput}
+              scroll={{
+                y: 500,
+                scrollToFirstRowOnChange: false,
+              }}
+              size="middle"
+            />
+            {noButton === true && (
+              <center className="show-more-btn">
+                <br />
+                <Button onClick={() => ShowMore()}>Show more</Button>
+              </center>
+            )}
+          </>
         ) : (
           <Spin />
         )}
-        {noButton === true && (
-          <center className="show-more-btn">
-            <br />
-            <Button onClick={() => ShowMore()}>Show more</Button>
-          </center>
-        )}
-      </Layout>
+      </Space>
     </>
   )
 }
 
-export default TaskList
+export default memo(TaskList)

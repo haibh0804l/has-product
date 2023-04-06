@@ -51,7 +51,10 @@ import { RemoveAttachment } from '../data/attachmentService'
 import { SelectorValue } from '../data/interface/SelectorValue'
 import RemoteSelectorSingle from './selector/RemoteSelectorSingle'
 import { fetchFilterResult } from '../redux/features/filter/filterSlice'
-import { FilterRequest } from '../data/interface/FilterInterface'
+import {
+  FilterRequest,
+  FilterRequestWithType,
+} from '../data/interface/FilterInterface'
 import { ProjectRepsonse, ProjectRequest } from '../data/database/Project'
 import { GetUsersByProject } from '../data/projectService'
 
@@ -152,6 +155,7 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
   const [assigneeValue, setAssigneeValue] = useState<SelectorValue>()
   const [reporterValue, setReporterValue] = useState<SelectorValue>()
 
+  const [isProjectChange, setIsProjectChange] = useState(false)
   const [attachment, setAttachment] = useState<AttachmentProps[]>([])
   const [disableSubmit, setDisableSubmit] = useState(false)
   const dispatch = useAppDispatch()
@@ -274,6 +278,7 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
 
   const onChangeProject = (e: SelectorValue) => {
     setProject(e)
+    setIsProjectChange(!isProjectChange)
     setCookie('projectId', e.value)
     if (e.value) {
       if (e.value !== '') {
@@ -596,13 +601,16 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
         //report
         dispatch(fetchTasksReporter(params))
       } else {
-        const filterRequest: FilterRequest = {
+        const filterRequest: FilterRequestWithType = {
           filter: initFilter.filter,
+          type: PROJECT,
         }
         dispatch(fetchFilterResult(filterRequest))
       }
     } else {
       //nothing here yet
+      //my work
+      dispatch(fetchTasksAssignee(params))
     }
     setDisableSubmit(false)
 
@@ -655,6 +663,8 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
             ]}
           >
             <Input
+              showCount
+              maxLength={100}
               placeholder="Task Name"
               defaultValue={taskName}
               onBlur={(e) => {
@@ -686,6 +696,7 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
                   onChangeSelectorFunc={onChangeAssigneeValue}
                   isProjectFixed={isProjectFixed}
                   projectId={project ? project.value : undefined}
+                  isProjectChange={isProjectChange}
                 />
               </Form.Item>
               <Form.Item
@@ -698,6 +709,7 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
                   onChangeSelectorFunc={onChangeReporterValue}
                   isProjectFixed={isProjectFixed}
                   projectId={project ? project.value : undefined}
+                  isProjectChange={isProjectChange}
                 />
               </Form.Item>
             </Input.Group>

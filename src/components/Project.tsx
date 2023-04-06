@@ -15,6 +15,7 @@ import { Tasks } from '../data/database/Tasks'
 import { Users } from '../data/database/Users'
 import {
   FilterRequest,
+  FilterRequestWithType,
   FilterResponse,
 } from '../data/interface/FilterInterface'
 import { SelectorValue } from '../data/interface/SelectorValue'
@@ -24,6 +25,7 @@ import {
   addManager,
   fetchFilterResult,
 } from '../redux/features/filter/filterSlice'
+import { PROJECT } from '../util/ConfigText'
 import DateFormatter from '../util/DateFormatter'
 import GetStatusIgnoreList from '../util/StatusList'
 import DropdownProps from './Dropdown'
@@ -379,17 +381,27 @@ const Project: React.FC = () => {
       })
       setDefaultActiveKey(_defaultKey)
       setLoading(false)
+    } else {
+      setFilterResponse([])
+      setLoading(false)
     }
   }, [filterInit.loading, filterInit.filterResponse.length])
 
   useEffect(() => {
-    setLoading(true)
-    //check for any change here
-    const filterReq: FilterRequest = {
-      filter: filterInit.filter,
-    }
-    dispatch(fetchFilterResult(filterReq))
-  }, [filterInit.filter])
+    const delayDebounceFn = setTimeout(() => {
+      if (filterInit.tabs === '3') {
+        setLoading(true)
+        //check for any change here
+        const filterReq: FilterRequestWithType = {
+          filter: filterInit.filter,
+          type: PROJECT,
+        }
+        dispatch(fetchFilterResult(filterReq))
+      }
+    }, 200)
+
+    return () => clearTimeout(delayDebounceFn)
+  }, [filterInit.filter, filterInit.tabs])
 
   const HeaderStyle = (response: FilterResponse) => (
     <Space direction="horizontal" align="center">
@@ -429,7 +441,7 @@ const Project: React.FC = () => {
   return (
     <div>
       <Space direction="vertical" style={{ width: '100%' }}>
-        <SearchBar tabs="3" projects={[]} status={[]} />
+        <SearchBar tabs={'3'} projects={[]} status={[]} />
         {!loading ? (
           <>
             {filterResponse.length > 0 ? (

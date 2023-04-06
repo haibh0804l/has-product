@@ -12,6 +12,16 @@ interface Name {
 
 const { Paragraph } = Typography
 
+const _styleTask: React.CSSProperties = {
+  margin: '0',
+  width: '30vw',
+}
+
+const _styleProject: React.CSSProperties = {
+  margin: '0',
+  //width: '20vw',
+}
+
 const ParagraphExample: React.FC<Name> = ({ type, name, task }) => {
   const [ellipsis, setEllipsis] = useState(true)
   const [expand, setExpand] = useState(false)
@@ -32,7 +42,7 @@ const ParagraphExample: React.FC<Name> = ({ type, name, task }) => {
     <>
       <div key={counter}>
         <Space direction="horizontal">
-          <Tooltip title={name} placement="right">
+          {type ? (
             <Paragraph
               ellipsis={
                 ellipsis
@@ -44,17 +54,36 @@ const ParagraphExample: React.FC<Name> = ({ type, name, task }) => {
                     }
                   : false
               }
-              style={{ margin: '0' }}
+              style={_styleTask}
             >
-              {name}
+              <Tooltip title={name}>{name}</Tooltip>
+              {type && task && task.Subtask && task.Subtask?.length ? (
+                <Tooltip title={task.Subtask?.length + ' subtask(s)'}>
+                  <FontAwesomeIcon
+                    icon={faDiagramProject}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ marginLeft: '10px' }}
+                  />
+                </Tooltip>
+              ) : null}
             </Paragraph>
-          </Tooltip>
-
-          {type && task && task.Subtask && task.Subtask?.length ? (
-            <Tooltip title={task.Subtask?.length + ' subtask(s)'}>
-              <FontAwesomeIcon icon={faDiagramProject} />
-            </Tooltip>
-          ) : null}
+          ) : (
+            <Paragraph
+              ellipsis={
+                ellipsis
+                  ? {
+                      rows: 1,
+                      expandable: false,
+                      symbol: '...',
+                      onExpand: () => TypoExpand(),
+                    }
+                  : false
+              }
+              style={_styleProject}
+            >
+              <Tooltip title={name}>{name}</Tooltip>
+            </Paragraph>
+          )}
         </Space>
       </div>
       {expand === true && <a onClick={TypoClose}>Close</a>}

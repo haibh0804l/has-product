@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import AboutPage from './pages/About'
 import HomePage from './pages/HomePage'
 import MyWork from './pages/MyWork'
@@ -24,6 +24,7 @@ const MainRoutes = () => {
           <Route path={CustomRoutes.Setting.path} element={<SettingPage />} />
           <Route path={CustomRoutes.About.path} element={<AboutPage />} />
         </Route>
+
         <Route path={CustomRoutes.Signin.path} element={<Signin />}></Route>
       </Routes>
     </>

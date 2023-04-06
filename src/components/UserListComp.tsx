@@ -34,6 +34,7 @@ const UserListComp: React.FC<UserData> = ({
   assigneeUpdate,
   taskId,
   userItems,
+  disabled,
 }) => {
   //const [data, setData] = useState<Users[]>(userData)
   const [assignee, setAssignee] = useState<Users[]>(
@@ -106,21 +107,24 @@ const UserListComp: React.FC<UserData> = ({
       <Space className="ant-group-item-icons" size={0} align="baseline">
         <IconGroup inputList={assignee} maxCount={maxCount} />
         {items && items.length ? (
-          <Tooltip title={tooltipText}>
-            <Dropdown
-              menu={{
-                items: items,
-                onClick: (e) => {
-                  if (onClickMenu) onClickMenu(e)
-                  AddAssignee(e.key)
-                },
-              }}
-              trigger={['click']}
-            >
-              {/*  <FontAwesomeIcon icon={faUserPlus} /> */}
-              {icon}
-            </Dropdown>
-          </Tooltip>
+          !disabled ? (
+            <Tooltip title={tooltipText}>
+              <Dropdown
+                menu={{
+                  items: items,
+                  onClick: (e) => {
+                    if (onClickMenu) onClickMenu(e)
+                    AddAssignee(e.key)
+                  },
+                }}
+                trigger={['click']}
+                disabled={disabled}
+              >
+                {/*  <FontAwesomeIcon icon={faUserPlus} /> */}
+                {icon}
+              </Dropdown>
+            </Tooltip>
+          ) : null
         ) : (
           <Spin />
         )}

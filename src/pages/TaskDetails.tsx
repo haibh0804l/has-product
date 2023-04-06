@@ -73,29 +73,35 @@ import { AttachmentResponse } from '../data/database/Attachment'
 import axios from 'axios'
 import { RemoveAttachment } from '../data/attachmentService'
 import { CheckExtension } from '../util/Extension'
-import io from 'socket.io-client'
 import { SocketContext } from '../context'
-import { Tab } from 'bootstrap'
-import { tab } from '@testing-library/user-event/dist/tab'
-import { TabPane } from 'react-bootstrap'
-import { getActiveElement } from '@testing-library/user-event/dist/utils'
 import { GetUsersByProject } from '../data/projectService'
 import { ProjectRequest } from '../data/database/Project'
+import { ShowUploadListInterface } from 'antd/es/upload/interface'
+import { TaskDetailsProps } from '../data/interface/ComponentsJson'
+import Auth from '../util/Auth'
 
 interface TaskData {
   taskData?: Tasks
   openModal: boolean
 }
 
-const socket = io(process.env.REACT_APP_SOCKET!, {
+interface ReactQuillDeltaOps {
+  ops: ReactQuillData[]
+}
+
+interface ReactQuillData {
+  insert: string
+}
+
+/* const socket = io(process.env.REACT_APP_SOCKET!, {
   reconnectionDelayMax: 10000,
-  /* auth: {
+  auth: {
     token: '123',
   },
   query: {
     'my-key': 'my-value',
-  }, */
-})
+  },
+}) */
 
 const { Header, Content } = Layout
 
@@ -184,7 +190,6 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
   })
 
   const [miniModal, setMiniModal] = useState(false)
-  const [readOnly, setReadOnly] = useState(true)
   const [showScore, setShowScore] = useState(false)
   const [statusIgnoreList, setStatusIgnoreList] = useState<Status[]>([])
   const [fileList, setFileList] = useState<UploadFile[]>([])
@@ -196,7 +201,25 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
   const dispatch = useAppDispatch()
   const [saved, setSaved] = useState(false)
   const [savedSummary, setSavedSummary] = useState(false)
-  const [disableSummary, setDisableSummary] = useState(true)
+  const [disableSummary, setDisableSummary] = useState(false)
+  const [defaultTab, setDefaultTab] = useState('Description')
+
+  //component state
+  const [isTaskNameReadOnly, setIsTasknameReadOnly] = useState(false)
+  const [isDescriptionReadOnly, setIsDescriptionReadOnly] = useState(false)
+  const [isSummaryReadOnly, setSummaryReadOnly] = useState(false)
+  const [isDateReadOnly, setIsDateReadOnly] = useState(false)
+  const [isStatusReadOnly, setStatusReadOnly] = useState(false)
+  const [isPriorityReadOnly, setIsPriorityReadOnly] = useState(false)
+  const [isAssigneeReadOnly, setIsAssigneeReadOnly] = useState(false)
+  const [isReporterReadOnly, setIsReporterReadOnly] = useState(false)
+  const [isCommentReadOnly, setIsCommentReadOnly] = useState(false)
+  const [isDisableUpload, setIsDisableUpload] = useState(false)
+  const [isDisableDeleteFile, setIsDisableDeleteFile] = useState(false)
+  const [readOnly, setReadOnly] = useState(true)
+  const [isNotAuthorize, setIsNotAuthorize] = useState(false)
+  const [canCreatedSubtask, setCanCreateSubtask] = useState(false)
+  const [isSubtaskReadOnly, setIsSubtaskReadOnly] = useState(false)
 
   const customRequest = (options: any) => {
     const data = new FormData()
@@ -257,6 +280,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
   }
 
   const props: UploadProps = {
+    disabled: isDisableUpload,
     fileList: fileList,
     multiple: false,
     action: process.env.REACT_APP_API_ATTACHMENTS_ADDATTACHMENT!,
@@ -301,15 +325,22 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
       }
     },
     onDrop(e) {
-      console.log('Dropped files', e.dataTransfer.files)
+      //console.log('Dropped files', e.dataTransfer.files)
     },
+    showUploadList: !isDisableDeleteFile
+      ? {}
+      : {
+          showRemoveIcon: false,
+        },
   }
 
   const items: TabsProps['items'] = [
     {
       key: 'comments',
       label: `Comments`,
-      children: <Comments taskId={taskData._id!} />,
+      children: (
+        <Comments taskId={taskData._id!} disabled={isCommentReadOnly} />
+      ),
     },
     {
       key: 'history',
@@ -346,20 +377,24 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
   }
 
   const SaveEditor = async () => {
-    setSaveBtn(false)
-    const inputTask: InputTasks = {
-      Description: JSON.stringify(editorValue),
+    if (!isDescriptionReadOnly) {
+      setSaveBtn(false)
+      const inputTask: InputTasks = {
+        Description: JSON.stringify(editorValue),
+      }
+      await UpdateTask('/api/task/', taskData._id!, inputTask)
+      //console.log('111111111111', editorValue)
     }
-    await UpdateTask('/api/task/', taskData._id!, inputTask)
-    console.log('111111111111', editorValue)
   }
 
   const SaveSummaryEditor = async () => {
-    setSaveBtnSummary(false)
-    const inputTask: InputTasks = {
-      SummaryReport: JSON.stringify(summaryValue),
+    if (!isSummaryReadOnly) {
+      setSaveBtnSummary(false)
+      const inputTask: InputTasks = {
+        SummaryReport: JSON.stringify(summaryValue),
+      }
+      await UpdateTask('/api/task/', taskData._id!, inputTask)
     }
-    await UpdateTask('/api/task/', taskData._id!, inputTask)
     //console.log('222222222222222', summaryValue)
   }
 
@@ -370,25 +405,35 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
       children: (
         <>
           <ReactQuill
+            readOnly={isDescriptionReadOnly}
             preserveWhitespace={true}
-            modules={{
-              toolbar: [
-                [{ font: [] }, { size: ['small', false, 'large', 'huge'] }], // custom dropdown
+            modules={
+              !isDescriptionReadOnly
+                ? {
+                    toolbar: [
+                      [
+                        { font: [] },
+                        { size: ['small', false, 'large', 'huge'] },
+                      ], // custom dropdown
 
-                ['bold', 'italic', 'underline', 'strike'],
+                      ['bold', 'italic', 'underline', 'strike'],
 
-                [{ color: [] }, { background: [] }],
-                [{ list: 'ordered' }, { list: 'bullet' }],
-                ['image'],
-              ],
-            }}
+                      [{ color: [] }, { background: [] }],
+                      [{ list: 'ordered' }, { list: 'bullet' }],
+                      ['image'],
+                    ],
+                  }
+                : { toolbar: [] }
+            }
             value={editorValue}
             onChange={onChangeEditor}
             style={{
               height: '260px',
               overflow: 'inline',
             }}
-            onFocus={() => setSaveBtn(true)}
+            onFocus={() => {
+              if (!isDescriptionReadOnly) setSaveBtn(true)
+            }}
           ></ReactQuill>
 
           {saveBtn === true && (
@@ -406,29 +451,39 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
     {
       key: 'Summarry',
       label: `Summary Report`,
-      //disabled: disableSummary,
+      disabled: disableSummary,
       children: (
         <>
           <ReactQuill
+            readOnly={isSummaryReadOnly}
             preserveWhitespace={true}
-            modules={{
-              toolbar: [
-                [{ font: [] }, { size: ['small', false, 'large', 'huge'] }], // custom dropdown
+            modules={
+              !isSummaryReadOnly
+                ? {
+                    toolbar: [
+                      [
+                        { font: [] },
+                        { size: ['small', false, 'large', 'huge'] },
+                      ], // custom dropdown
 
-                ['bold', 'italic', 'underline', 'strike'],
+                      ['bold', 'italic', 'underline', 'strike'],
 
-                [{ color: [] }, { background: [] }],
-                [{ list: 'ordered' }, { list: 'bullet' }],
-                ['image'],
-              ],
-            }}
+                      [{ color: [] }, { background: [] }],
+                      [{ list: 'ordered' }, { list: 'bullet' }],
+                      ['image'],
+                    ],
+                  }
+                : { toolbar: [] }
+            }
             value={summaryValue}
             onChange={onChangeSummaryEditor}
             style={{
               height: '260px',
               overflow: 'inline',
             }}
-            onFocus={() => setSaveBtnSummary(true)}
+            onFocus={() => {
+              if (!isSummaryReadOnly) setSaveBtnSummary(true)
+            }}
           ></ReactQuill>
 
           {saveBtnSummary === true && (
@@ -519,15 +574,45 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
 
     let summ = ''
     try {
+      const _summ: ReactQuillDeltaOps = JSON.parse(data[0].SummaryReport!)
       summ = JSON.parse(data[0].SummaryReport!)
+      let _stringTotal = ''
+      for (let index = 0; index < _summ.ops.length; index++) {
+        const element = _summ.ops[index]
+        _stringTotal += element.insert
+      }
+      if (!_stringTotal.replace(/\s/g, '').length) {
+        /* console.log(
+          'WTF only space ' + JSON.stringify(_stringTotal.replace(/\s/g, '')),
+        ) */
+        if (userInfo.Role!.Level >= 3) {
+          setDefaultTab('Description')
+          setDisableSummary(true)
+        } else {
+          setDefaultTab('Summarry')
+          setDisableSummary(false)
+        }
+      } else {
+        if (userInfo.Role!.Level >= 3) {
+          setDefaultTab('Summarry')
+          setDisableSummary(false)
+        } else {
+          setDefaultTab('Description')
+        }
+      }
     } catch (e) {
-      /* if (userInfo.Role!.Level >= 3) {
+      if (userInfo.Role!.Level >= 3) {
+        setDefaultTab('Description')
         setDisableSummary(true)
-      } */
+      } else {
+        setDefaultTab('Description')
+        setDisableSummary(false)
+      }
     }
     //console.log('My report ' + data[0].SummaryReport!)
     setSummaryValue(summ)
 
+    let managers: string[] = []
     if (!data[0].Project) {
       const dataAssignee = await GetUserByType(
         '/api/users/getReporterOrAssignee',
@@ -544,7 +629,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
       setReporterData(dataRp)
     } else {
       if (Object.keys(data[0].Project).length === 0) {
-        //no properties
+        //no project
         const dataAssignee = await GetUserByType(
           '/api/users/getReporterOrAssignee',
           'assignee',
@@ -572,8 +657,33 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
         const dataRpData = dataRp.data as Users[]
 
         setReporterData(dataRpData)
+
+        managers = data[0].Project.Manager! as string[]
       }
     }
+    //get RBCA
+    const props: TaskDetailsProps = Auth(
+      getCookie('user_id')!,
+      data[0].Assignee[0]._id!,
+      data[0].Reporter._id!,
+      managers,
+    )
+
+    setIsTasknameReadOnly(props.isTaskNameReadOnly)
+    setIsDescriptionReadOnly(props.isDescriptionReadOnly)
+    setSummaryReadOnly(props.isSummaryReadOnly)
+    setIsDateReadOnly(props.isDateReadOnly)
+    setStatusReadOnly(props.isStatusReadOnly)
+    setIsPriorityReadOnly(props.isPriorityReadOnly)
+    setIsAssigneeReadOnly(props.isAssigneeReadOnly)
+    setIsReporterReadOnly(props.isReporterReadOnly)
+    setIsCommentReadOnly(props.isCommentReadOnly)
+    setIsDisableUpload(props.isDisableUpload)
+    setIsDisableDeleteFile(props.isDisableDeleteFile)
+    setReadOnly(props.readOnly)
+    setIsNotAuthorize(props.isNotAuthorize)
+    setCanCreateSubtask(props.canCreatedSubtask)
+    setIsSubtaskReadOnly(props.isSubtaskReadOnly)
 
     //console.log('All data ' + JSON.stringify(data[0].Subtask!))
     const scoreProp: ScoreCompProp = GetScoreReviewDisplay(
@@ -658,19 +768,20 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
       const inputTask: InputTasks = {
         Description: JSON.stringify(editorValue),
       }
-      if (taskData._id) {
+      if (taskData._id && !isDescriptionReadOnly) {
         UpdateTask('/api/task/', taskData._id!, inputTask).then((r) => {})
       }
     }, 1000)
 
     return () => clearTimeout(delayDebounceFn)
   }, [saved])
+
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       const inputTask: InputTasks = {
         SummaryReport: JSON.stringify(summaryValue),
       }
-      if (taskData._id) {
+      if (taskData._id && !isSummaryReadOnly) {
         UpdateTask('/api/task/', taskData._id!, inputTask).then((r) => {})
       }
     }, 1000)
@@ -836,6 +947,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
         isEditDetail={true}
         parentTask={parentTask}
         noLoad={true}
+        disabled={isSubtaskReadOnly}
       />
     )
   }
@@ -876,252 +988,262 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
         footer={[]}
         // style={{ top: '10vh' }}
       >
-        {loading === false ? (
-          <Layout>
-            <Header style={{ height: '20%', marginLeft: '16px' }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <ModalBreadCrumb />
-                {haveParentTask === true && (
-                  <Button
-                    type="primary"
-                    onClick={() => BackToMainTask(parentTask)}
-                  >
-                    Back to main tasks
-                  </Button>
-                )}
-                <Row gutter={12}>
-                  <Col className="gutter-row" span={16}>
-                    <Space direction="horizontal">
+        {!isNotAuthorize ? (
+          loading === false ? (
+            <Layout>
+              <Header style={{ height: '20%', marginLeft: '16px' }}>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <ModalBreadCrumb />
+                  {haveParentTask === true && (
+                    <Button
+                      type="primary"
+                      onClick={() => BackToMainTask(parentTask)}
+                    >
+                      Back to main tasks
+                    </Button>
+                  )}
+                  <Row gutter={12}>
+                    <Col className="gutter-row" span={16}>
+                      <Space direction="horizontal">
+                        <DropdownProps
+                          type="Status"
+                          text={taskData?.Status}
+                          button={true}
+                          taskId={taskData?._id}
+                          id={'details'}
+                          ignoreStt={statusIgnoreList}
+                          onClickMenu={onChangeStatus}
+                          task={taskData}
+                          disabled={isStatusReadOnly}
+                        />
+                        {isTaskNameReadOnly ? (
+                          <p className="bold-weight">{taskData?.TaskName}</p>
+                        ) : editTaskName === false ? (
+                          <p
+                            className="bold-weight"
+                            onClick={() => setEditTaskName(true)}
+                          >
+                            {taskData?.TaskName}
+                          </p>
+                        ) : (
+                          <Input
+                            showCount
+                            maxLength={100}
+                            defaultValue={taskData.TaskName}
+                            onBlur={OnBlurTaskName}
+                            autoFocus
+                          />
+                        )}
+                      </Space>
+                    </Col>
+                    {showScore && (
+                      <>
+                        <Col
+                          className="gutter-row"
+                          span={2}
+                          style={{ flex: 'revert' }}
+                        >
+                          <Space direction="horizontal" size={5}>
+                            <Avatar
+                              onClick={() => {
+                                setMiniModal(true)
+                              }}
+                              style={{
+                                borderColor: '#FACC15',
+                                backgroundColor: 'white',
+                              }}
+                            >
+                              <FontAwesomeIcon icon={faStar} color="#FACC15" />
+                            </Avatar>
+                            <p
+                              style={{
+                                fontSize: '18px',
+                                color: '#0e7490',
+                                fontWeight: 'bold',
+                              }}
+                            >
+                              {taskData.Score!}
+                            </p>
+                          </Space>
+                        </Col>
+                      </>
+                    )}
+                    <Col
+                      className="gutter-row"
+                      span={4}
+                      style={{ flex: 'revert', marginRight: '10px' }}
+                    >
+                      <CustomDatePicker
+                        disabled={isDateReadOnly}
+                        dueDateInput={taskData.DueDate?.toString()!}
+                        //onChangeValue={OnChangeDateTime}
+                        mode={UPDATE_MODE}
+                        onOkEvent={onOkEvent}
+                      />
+                    </Col>
+                    <Col
+                      className="gutter-row"
+                      span={1}
+                      style={{ flex: 'revert' }}
+                    >
                       <DropdownProps
-                        type="Status"
-                        text={taskData?.Status}
-                        button={true}
+                        type={'Priority'}
+                        text={taskData?.Priority ? taskData?.Priority : ''}
                         taskId={taskData?._id}
                         id={'details'}
-                        ignoreStt={statusIgnoreList}
-                        onClickMenu={onChangeStatus}
                         task={taskData}
+                        disabled={isPriorityReadOnly}
                       />
-                      {editTaskName === false ? (
-                        <p
-                          className="bold-weight"
-                          onClick={() => setEditTaskName(true)}
+                    </Col>
+                    {getUsers === false ? (
+                      <>
+                        <Col
+                          className="gutter-row"
+                          span={4}
+                          style={{ flex: 'revert' }}
                         >
-                          {taskData?.TaskName}
-                        </p>
-                      ) : (
-                        <Input
-                          maxLength={80}
-                          defaultValue={taskData.TaskName}
-                          onBlur={OnBlurTaskName}
-                          autoFocus
+                          <UserListComp
+                            disabled={isAssigneeReadOnly}
+                            userData={assigneeData}
+                            maxCount={2}
+                            icon={
+                              <Avatar
+                                style={{
+                                  borderColor: '#9CA3AF',
+                                  backgroundColor: 'white',
+                                }}
+                              >
+                                <FontAwesomeIcon
+                                  icon={faUserPlus}
+                                  color="#000000"
+                                />
+                              </Avatar>
+                            }
+                            tooltipText="Assignee"
+                            inputUserData={taskData?.Assignee}
+                            mode={UPDATE_MODE}
+                            assigneeUpdate={true}
+                            taskId={taskData._id}
+                          />
+                        </Col>
+                        <Col
+                          className="gutter-row"
+                          span={1}
+                          style={{ flex: 'revert' }}
+                        >
+                          <UserListComp
+                            disabled={isReporterReadOnly}
+                            userData={reporterData}
+                            maxCount={3}
+                            icon={
+                              <Avatar
+                                style={{
+                                  borderColor: '#9CA3AF',
+                                  backgroundColor: 'white',
+                                }}
+                              >
+                                <FontAwesomeIcon
+                                  icon={faUserCheck}
+                                  color="#000000"
+                                />
+                              </Avatar>
+                            }
+                            tooltipText="Reporter"
+                            inputUserData={reporter}
+                            mode={UPDATE_MODE}
+                            taskId={taskData._id}
+                          />
+                        </Col>
+                      </>
+                    ) : (
+                      <Spin size="large" />
+                    )}
+                  </Row>
+                </Space>
+              </Header>
+              <Content>
+                <Row>
+                  <Col
+                    span={16}
+                    style={{
+                      marginRight: '0.5%',
+                    }}
+                  >
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <div style={{ height: '26.8rem', overflow: 'auto' }}>
+                        <Tabs
+                          defaultActiveKey={defaultTab}
+                          onChange={OnChange}
+                          items={itemSummary}
+                          style={{
+                            borderStyle: 'solid',
+                            borderWidth: 'thin',
+                            borderRadius: '4px',
+                            border: '1px solid #9CA3AF',
+                            minHeight: '450px',
+                            padding: '1%',
+                            overflow: 'hidden',
+                            position: 'relative',
+                            //maxHeight: '450px',
+                            height: '100%',
+                          }}
                         />
-                      )}
+
+                        <br />
+                        <br />
+                        {assigneeData.length !== 0 ? (
+                          <Space direction="vertical" style={{ width: '100%' }}>
+                            {subTasksComp.map((element) => element.content)}
+
+                            {canCreatedSubtask && (
+                              <Button
+                                type="dashed"
+                                onClick={AddTask}
+                                block
+                                icon={<FontAwesomeIcon icon={faPlus} />}
+                                disabled={!openSubTaskBtn}
+                                style={{ width: '150px' }}
+                              >
+                                Subtask
+                              </Button>
+                            )}
+                          </Space>
+                        ) : (
+                          <Spin />
+                        )}
+                      </div>
+                      <Dragger {...props}>
+                        <p className="ant-upload-text">Drag & drop here</p>
+                      </Dragger>
                     </Space>
                   </Col>
-                  {showScore && (
-                    <>
-                      <Col
-                        className="gutter-row"
-                        span={2}
-                        style={{ flex: 'revert' }}
-                      >
-                        <Space direction="horizontal" size={5}>
-                          <Avatar
-                            onClick={() => {
-                              setMiniModal(true)
-                            }}
-                            style={{
-                              borderColor: '#FACC15',
-                              backgroundColor: 'white',
-                            }}
-                          >
-                            <FontAwesomeIcon icon={faStar} color="#FACC15" />
-                          </Avatar>
-                          <p
-                            style={{
-                              fontSize: '18px',
-                              color: '#0e7490',
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            {taskData.Score!}
-                          </p>
-                        </Space>
-                      </Col>
-                    </>
-                  )}
-                  <Col
-                    className="gutter-row"
-                    span={4}
-                    style={{ flex: 'revert', marginRight: '10px' }}
-                  >
-                    <CustomDatePicker
-                      dueDateInput={taskData.DueDate?.toString()!}
-                      //onChangeValue={OnChangeDateTime}
-                      mode={UPDATE_MODE}
-                      onOkEvent={onOkEvent}
+                  <Col flex={8} style={{ height: '500px' }}>
+                    <Tabs
+                      defaultActiveKey="2"
+                      items={items}
+                      onChange={OnChange}
+                      style={{
+                        borderStyle: 'solid',
+                        borderWidth: 'thin',
+                        borderRadius: '4px',
+                        border: '1px solid #9CA3AF',
+                        minHeight: '230px',
+                        padding: '1%',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        //maxHeight: '450px',
+                        height: '100%',
+                      }}
                     />
                   </Col>
-                  <Col
-                    className="gutter-row"
-                    span={1}
-                    style={{ flex: 'revert' }}
-                  >
-                    <DropdownProps
-                      type={'Priority'}
-                      text={taskData?.Priority ? taskData?.Priority : ''}
-                      taskId={taskData?._id}
-                      id={'details'}
-                      task={taskData}
-                    />
-                  </Col>
-                  {getUsers === false ? (
-                    <>
-                      <Col
-                        className="gutter-row"
-                        span={4}
-                        style={{ flex: 'revert' }}
-                      >
-                        <UserListComp
-                          userData={assigneeData}
-                          maxCount={2}
-                          icon={
-                            <Avatar
-                              style={{
-                                borderColor: '#9CA3AF',
-                                backgroundColor: 'white',
-                              }}
-                            >
-                              <FontAwesomeIcon
-                                icon={faUserPlus}
-                                color="#000000"
-                              />
-                            </Avatar>
-                          }
-                          tooltipText="Assignee"
-                          inputUserData={taskData?.Assignee}
-                          mode={UPDATE_MODE}
-                          assigneeUpdate={true}
-                          taskId={taskData._id}
-                        />
-                        {/*  <IconGroup
-                  inputList={taskData?.Assignee as Users[]}
-                  maxCount={5}
-                /> */}
-                      </Col>
-                      <Col
-                        className="gutter-row"
-                        span={1}
-                        style={{ flex: 'revert' }}
-                      >
-                        <UserListComp
-                          userData={reporterData}
-                          maxCount={3}
-                          icon={
-                            <Avatar
-                              style={{
-                                borderColor: '#9CA3AF',
-                                backgroundColor: 'white',
-                              }}
-                            >
-                              <FontAwesomeIcon
-                                icon={faUserCheck}
-                                color="#000000"
-                              />
-                            </Avatar>
-                          }
-                          tooltipText="Reporter"
-                          inputUserData={reporter}
-                          mode={UPDATE_MODE}
-                          taskId={taskData._id}
-                        />
-                      </Col>
-                    </>
-                  ) : (
-                    <Spin size="large" />
-                  )}
                 </Row>
-              </Space>
-            </Header>
-            <Content>
-              <Row>
-                <Col
-                  span={16}
-                  style={{
-                    marginRight: '0.5%',
-                  }}
-                >
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <div style={{ height: '26.8rem', overflow: 'auto' }}>
-                      <Tabs
-                        defaultActiveKey="2"
-                        onChange={OnChange}
-                        items={itemSummary}
-                        style={{
-                          borderStyle: 'solid',
-                          borderWidth: 'thin',
-                          borderRadius: '4px',
-                          border: '1px solid #9CA3AF',
-                          minHeight: '450px',
-                          padding: '1%',
-                          overflow: 'hidden',
-                          position: 'relative',
-                          //maxHeight: '450px',
-                          height: '100%',
-                        }}
-                      />
-
-                      <br />
-                      <br />
-                      {assigneeData.length !== 0 ? (
-                        <Space direction="vertical" style={{ width: '100%' }}>
-                          {subTasksComp.map((element) => element.content)}
-
-                          <Button
-                            type="dashed"
-                            onClick={AddTask}
-                            block
-                            icon={<FontAwesomeIcon icon={faPlus} />}
-                            disabled={!openSubTaskBtn}
-                            style={{ width: '150px' }}
-                          >
-                            Subtask
-                          </Button>
-                        </Space>
-                      ) : (
-                        <Spin />
-                      )}
-                    </div>
-                    <Dragger {...props}>
-                      <p className="ant-upload-text">Drag & drop here</p>
-                    </Dragger>
-                  </Space>
-                </Col>
-                <Col flex={8} style={{ height: '500px' }}>
-                  <Tabs
-                    defaultActiveKey="2"
-                    items={items}
-                    onChange={OnChange}
-                    style={{
-                      borderStyle: 'solid',
-                      borderWidth: 'thin',
-                      borderRadius: '4px',
-                      border: '1px solid #9CA3AF',
-                      minHeight: '230px',
-                      padding: '1%',
-                      overflow: 'hidden',
-                      position: 'relative',
-                      //maxHeight: '450px',
-                      height: '100%',
-                    }}
-                  />
-                </Col>
-              </Row>
-            </Content>
-          </Layout>
+              </Content>
+            </Layout>
+          ) : (
+            <h1>Please wait</h1>
+          )
         ) : (
-          <h1>Please wait</h1>
+          <h1>You are not authorized to perform this operation</h1>
         )}
         <CustomFloatButton />
       </Modal>

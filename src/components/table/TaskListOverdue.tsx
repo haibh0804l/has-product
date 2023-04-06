@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useState,
+  useTransition,
+} from 'react'
 import {
   Table,
   Layout,
@@ -9,6 +15,7 @@ import {
   Input,
   Row,
   Col,
+  Space,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import DropdownProps from '../Dropdown'
@@ -28,12 +35,25 @@ import { useAppDispatch, useAppSelector } from '../../redux/app/hook'
 import { Params } from '../../data/interface/task'
 import { fetchTasksReporter } from '../../redux/features/tasks/reporterTaskSlice'
 import { reportToMeTaskChange } from '../../redux/features/reportToMeTask/reportToMeTaskSlice'
-import { IGNORE_STT_DEFAULT, SEARCH, UPDATE_MODE } from '../../util/ConfigText'
+import {
+  IGNORE_STT_DEFAULT,
+  REPORTER,
+  SEARCH,
+  UPDATE_MODE,
+} from '../../util/ConfigText'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { ToLowerCaseNonAccentVietnamese } from '../../util/FormatText'
 import GetStatusIgnoreList from '../../util/StatusList'
 import { status } from '../../data/menuProps'
+import {
+  addAssignee,
+  addManager,
+  addReporter,
+  fetchFilterResult,
+} from '../../redux/features/filter/filterSlice'
+import { FilterRequestWithType } from '../../data/interface/FilterInterface'
+import { SearchBar } from '../filter/SearchBar'
 
 interface DataType {
   key: string
@@ -64,6 +84,8 @@ const TaskListOverDue: React.FC<InputData> = ({
   showMore,
   increment,
 }) => {
+  const [isPending, startTransition] = useTransition()
+
   const navigate = useNavigate()
   const location = useLocation()
   const refresh = location.state
@@ -79,13 +101,8 @@ const TaskListOverDue: React.FC<InputData> = ({
     sessionStorage.getItem('showClosedTaskReport') === 'true',
   )
   const [loading, setLoading] = useState(false)
-  const task = useAppSelector((state) => state.reporterTasks)
+  const filterInit = useAppSelector((state) => state.filter)
   const dispatch = useAppDispatch()
-  const params: Params = {
-    serviceUrl: '',
-    type: getCookie('user_id')?.toString()!,
-    //userId: getCookie('user_id')?.toString(),
-  }
 
   const columns: ColumnsType<DataType> = [
     {
@@ -164,11 +181,16 @@ const TaskListOverDue: React.FC<InputData> = ({
       (a, b) =>
         new Date(a.DueDate!).getTime() - new Date(b.DueDate!).getTime() ||
         (a.PriorityNum as number) - (b.PriorityNum as number) ||
-        new Date(b.CreateDate).getTime() - new Date(a.CreateDate).getTime(),
+        new Date(a.CreateDate).getTime() - new Date(b.CreateDate).getTime(),
     )
 
+    const taskWithDueDate = inputObj
+      .filter((data) => data.DueDate !== null)
+      .concat(inputObj.filter((data) => data.DueDate === null))
+
+    inputObj = taskWithDueDate
+
     setInput(inputObj)
-    const lin = 0
     const _data: DataType[] = []
     if (inputLength > 0) {
       for (let index = 0; index < inputLength; index++) {
@@ -195,6 +217,7 @@ const TaskListOverDue: React.FC<InputData> = ({
           task: (
             <div onClick={() => OnNavigate(inputObj[index])}>
               <ParagraphExample
+                type="Task"
                 name={inputObj[index].TaskName}
                 task={inputObj[index]}
               />
@@ -281,7 +304,7 @@ const TaskListOverDue: React.FC<InputData> = ({
       }
       setDataInput(_data)
     } else {
-      if (!task.loading && task.tasks.length) {
+      if (!filterInit.loading) {
         setDataInput([])
         setInput([])
       }
@@ -340,6 +363,7 @@ const TaskListOverDue: React.FC<InputData> = ({
           task: (
             <div onClick={() => OnNavigate(inputObj[index])}>
               <ParagraphExample
+                type="Task"
                 name={inputObj[index].TaskName}
                 task={inputObj[index]}
               />
@@ -426,81 +450,16 @@ const TaskListOverDue: React.FC<InputData> = ({
       }
       setDataInput(_data)
     } else {
-      if (!task.loading && task.tasks.length) {
+      if (!filterInit.loading) {
         setDataInput([])
         setInput([])
       }
     }
   }
 
-  const Sorting = () => {
-    let value = searchValue!
-    if (value !== '') {
-      if (showCompleted === false) {
-        const sortedTask: Tasks[] = JSON.parse(JSON.stringify(task.tasks))
-        const inputObjFilter = sortedTask.filter(
-          (dataOtherEle) =>
-            dataOtherEle.Status.toLowerCase() !== 'Completed'.toLowerCase() &&
-            //dataOtherEle.Status.toLowerCase() !== 'Done'.toLowerCase() &&
-            dataOtherEle.Status.toLowerCase() !== 'Incompleted'.toLowerCase(),
-        )
-        const sortResult: Tasks[] = inputObjFilter.filter((x) =>
-          ToLowerCaseNonAccentVietnamese(x.TaskName).includes(
-            ToLowerCaseNonAccentVietnamese(value),
-          ),
-        )
-        if (sortResult.length === 0) {
-          ReorderTask([])
-        } else {
-          ReorderTask(sortResult)
-        }
-      } else {
-        const sortedTask: Tasks[] = JSON.parse(JSON.stringify(task.tasks))
-        const inputObjFilter = sortedTask.filter(
-          (dataOtherEle) =>
-            dataOtherEle.Status.toLowerCase() === 'Completed'.toLowerCase() ||
-            //dataOtherEle.Status.toLowerCase() !== 'Done'.toLowerCase() &&
-            dataOtherEle.Status.toLowerCase() === 'Incompleted'.toLowerCase(),
-        )
-
-        const sortResult: Tasks[] = inputObjFilter.filter((x) =>
-          ToLowerCaseNonAccentVietnamese(x.TaskName).includes(
-            ToLowerCaseNonAccentVietnamese(value),
-          ),
-        )
-        if (sortResult.length === 0) {
-          ReorderClosedTask([])
-        } else {
-          ReorderClosedTask(sortResult)
-        }
-
-        //dispatch(myTaskChange(inputObjFilter.length))
-      }
-    } else {
-      if (showCompleted === false) {
-        const sortedTask: Tasks[] = JSON.parse(JSON.stringify(task.tasks))
-        const inputObjFilter = sortedTask.filter(
-          (dataOtherEle) =>
-            dataOtherEle.Status.toLowerCase() !== 'Completed'.toLowerCase() &&
-            //dataOtherEle.Status.toLowerCase() !== 'Done'.toLowerCase() &&
-            dataOtherEle.Status.toLowerCase() !== 'Incompleted'.toLowerCase(),
-        )
-        ReorderTask(inputObjFilter)
-      } else {
-        const sortedTask: Tasks[] = JSON.parse(JSON.stringify(task.tasks))
-        const inputObjFilter = sortedTask.filter(
-          (dataOtherEle) =>
-            dataOtherEle.Status.toLowerCase() === 'Completed'.toLowerCase() ||
-            //dataOtherEle.Status.toLowerCase() !== 'Done'.toLowerCase() &&
-            dataOtherEle.Status.toLowerCase() === 'Incompleted'.toLowerCase(),
-        )
-        ReorderClosedTask(inputObjFilter)
-        //dispatch(myTaskChange(inputObjFilter.length))
-      }
-    }
-  }
-
   useEffect(() => {
+    dispatch(addManager([]))
+    dispatch(addReporter([getCookie('user_id')!]))
     try {
       const s = refresh.refresh
       if (refresh.refresh === true) {
@@ -510,36 +469,53 @@ const TaskListOverDue: React.FC<InputData> = ({
   }, [])
 
   useEffect(() => {
-    dispatch(fetchTasksReporter(params))
-  }, [loading])
-
-  useEffect(() => {
-    dispatch(reportToMeTaskChange(input.length))
-  }, [dataInput.length])
-
-  useEffect(() => {
-    if (!task.loading && task.tasks.length) {
-      Sorting()
+    setLoading(true)
+    //generate dummyJson in here
+    if (filterInit.tabs === '2') {
+      if (!filterInit.loading) {
+        if (filterInit.filterResponse.length) {
+          if (filterInit.filterResponse.length === 0) {
+            setInput([])
+            ReorderTask([])
+            setLoading(false)
+          } else {
+            if (filterInit.filter.completed) {
+              setShowCompleted(true)
+              setInput(filterInit.filterResponse as Tasks[])
+              ReorderClosedTask(filterInit.filterResponse as Tasks[])
+              setLoading(false)
+            } else {
+              setShowCompleted(false)
+              setInput(filterInit.filterResponse as Tasks[])
+              ReorderTask(filterInit.filterResponse as Tasks[])
+              setLoading(false)
+            }
+            dispatch(reportToMeTaskChange(filterInit.filterResponse.length))
+          }
+        } else {
+          setInput([])
+          ReorderTask([])
+          setLoading(false)
+        }
+      }
     }
-    setLoading(false)
-  }, [task.loading, task.tasks.length])
+  }, [filterInit.loading, filterInit.filterResponse.length])
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      Sorting()
-    }, 100)
-
-    return () => clearTimeout(delayDebounceFn)
-  }, [showCompleted])
-
-  useEffect(() => {
-    sessionStorage.setItem('searchValueTaskReport', searchValue!)
-    const delayDebounceFn = setTimeout(() => {
-      Sorting()
+      if (filterInit.tabs === '2') {
+        setLoading(true)
+        //check for any change here
+        const filterReq: FilterRequestWithType = {
+          filter: filterInit.filter,
+          type: REPORTER,
+        }
+        dispatch(fetchFilterResult(filterReq))
+      }
     }, 200)
 
     return () => clearTimeout(delayDebounceFn)
-  }, [searchValue])
+  }, [filterInit.filter, filterInit.tabs])
 
   const handleMenuClickStatus: MenuProps['onClick'] = async (e) => {
     //console.log('Hello')
@@ -571,50 +547,10 @@ const TaskListOverDue: React.FC<InputData> = ({
   }
   return (
     <>
-      <Layout>
-        <Row>
-          <Col span={16}>
-            <Input
-              prefix={<FontAwesomeIcon icon={faSearch} />}
-              placeholder={SEARCH}
-              //onPressEnter={(e) => onSearch(e)}
-              style={{
-                width: '50%',
-                border: 'none',
-                float: 'left',
-                marginBottom: '15px',
-              }}
-              value={searchValue!}
-              //defaultValue={inputValue}
-              //onChange={(e) => setInputValue(e.target.value)}
-              onChange={(e) => {
-                setSearchValue(e.target.value)
-              }}
-              //onBlur={(e) => InputChange(e.target.value)}
-              allowClear
-            />
-          </Col>
-          <Col span={8}>
-            <Checkbox
-              onChange={(e) => {
-                const saveBoolean: boolean = e.target.checked
-                sessionStorage.setItem(
-                  'showClosedTaskReport',
-                  Boolean(saveBoolean).toString(),
-                )
-                setShowCompleted(!showCompleted)
-              }}
-              style={{ float: 'right' }}
-              defaultChecked={
-                sessionStorage.getItem('showClosedTaskReport') === 'true'
-              }
-            >
-              Show closed tasks
-            </Checkbox>
-          </Col>
-        </Row>
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <SearchBar tabs={'2'} projects={[]} status={[]} />
 
-        {loading === false && (
+        {loading === false ? (
           <Table
             pagination={false}
             columns={columns}
@@ -622,6 +558,8 @@ const TaskListOverDue: React.FC<InputData> = ({
             scroll={{ y: 500, scrollToFirstRowOnChange: false }}
             size="middle"
           />
+        ) : (
+          <Spin size="large" />
         )}
         {noButton === true && (
           <center>
@@ -634,9 +572,9 @@ const TaskListOverDue: React.FC<InputData> = ({
             </Button>
           </center>
         )}
-      </Layout>
+      </Space>
     </>
   )
 }
 
-export default TaskListOverDue
+export default memo(TaskListOverDue)

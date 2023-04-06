@@ -64,6 +64,7 @@ const CustomHeader: React.FC<IHeader> = ({ pageName, userData }) => {
             sessionStorage.clear()
             removeCookie('user_id')
             removeCookie('userInfo')
+            sessionStorage.removeItem('reloadCount')
             navigate(CustomRoutes.Signin.path)
           }}
         >
