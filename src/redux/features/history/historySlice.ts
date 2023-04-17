@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { createAsyncThunk } from '@reduxjs/toolkit'
 import axios from 'axios'
 import { History } from '../../../data/database/History'
-import { Tasks } from '../../../data/database/Tasks'
+import ServiceHeader from '../../../data/services/header'
 
 type InitialState = {
   loading: boolean
@@ -29,9 +29,7 @@ export const fetchHistory = createAsyncThunk(
   async (params: HistoryRequest) => {
     const serviceUrl = process.env.REACT_APP_API_HISTORIES_GETALL!
     const response = await axios.post(serviceUrl, JSON.stringify(params), {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: ServiceHeader(),
     })
     return response.data
   },

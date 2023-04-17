@@ -11,7 +11,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import UserIcon from './UserIcon'
 import { Users } from '../data/database/Users'
 import { CustomRoutes } from '../customRoutes'
-import { removeCookie } from 'typescript-cookie'
+import { getCookie, removeCookie } from 'typescript-cookie'
+import InAppNotification from './InAppNotification'
 
 const { Header, Content, Footer, Sider } = Layout
 
@@ -22,6 +23,7 @@ interface IHeader {
 
 const CustomHeader: React.FC<IHeader> = ({ pageName, userData }) => {
   const [openMenu, setOpenMenu] = useState(false)
+  const userInfo = JSON.parse(getCookie('userInfo')!) as Users
   const navigate = useNavigate()
 
   const handleMenuClick: MenuProps['onClick'] = (e) => {
@@ -87,6 +89,7 @@ const CustomHeader: React.FC<IHeader> = ({ pageName, userData }) => {
           >
             <Space align="center">
               {/* <FontAwesomeIcon icon={faBell} /> */}
+              <InAppNotification />
               <Dropdown
                 menu={{ items, onClick: handleMenuClick }}
                 placement="bottomRight"
@@ -95,8 +98,7 @@ const CustomHeader: React.FC<IHeader> = ({ pageName, userData }) => {
               >
                 <a onClick={(e) => e.preventDefault()}>
                   <Space>
-                    <FontAwesomeIcon icon={faUser} />
-                    <DownOutlined />
+                    <UserIcon userInfo={userInfo} userColor={userInfo.Color} />
                   </Space>
                 </a>
               </Dropdown>

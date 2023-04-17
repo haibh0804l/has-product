@@ -1,29 +1,39 @@
 import { Layout, theme, Image, Spin } from 'antd'
 import { useEffect, useState } from 'react'
-import { Navigate, Outlet, Route, useNavigate } from 'react-router-dom'
+import {
+  Navigate,
+  Outlet,
+  Route,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom'
 import SideMenu from '../components/SideMenu'
 import hptIcon from '../assets/img/hpt-icon.svg'
 import { CustomRoutes } from '../customRoutes'
 import CustomHeader from '../components/CustomHeader'
 import { Users } from '../data/database/Users'
-import { getCookie, removeCookie, setCookie } from 'typescript-cookie'
+import { getCookie } from 'typescript-cookie'
 import {
   addAssignee,
   addManager,
   addReporter,
 } from '../redux/features/filter/filterSlice'
 import { useAppDispatch, useAppSelector } from '../redux/app/hook'
+import { PageName } from '../data/interface/PageName'
 
 const { Sider } = Layout
 
-const HomePage: React.FC = () => {
+const HomePage: React.FC<PageName> = ({ name }) => {
   const navigate = useNavigate()
-  //const location = useLocation()
+  const location = useLocation()
   const [collapsed, setCollapsed] = useState(true)
   const [isReload, setIsReload] = useState(true)
   const filterInit = useAppSelector((state) => state.filter)
   const dispatch = useAppDispatch()
+
   useEffect(() => {
+    document.title = name
+    sessionStorage.setItem('location', JSON.stringify(location))
     if (filterInit.tabs === '1') {
       dispatch(addAssignee([getCookie('user_id')!]))
     } else if (filterInit.tabs === '2') {
@@ -31,17 +41,9 @@ const HomePage: React.FC = () => {
     } else {
       dispatch(addManager([getCookie('user_id')!]))
     }
-    //dispatch(addManager([getCookie('user_id')!]))
-    //if (sessionStorage.getItem('user_id') === null) {
-    /* if (getCookie('user_id') === undefined || getCookie('user_id') === null) {
-      navigate(CustomRoutes.Signin.path, { replace: true })
-    } else {
-      //navigate(CustomRoutes.MyWork.path, { replace: true })
-    } */
 
     const reloadCount = sessionStorage.getItem('reloadCount')
     if (reloadCount) {
-      //console.log('Ok')
       if (Number(reloadCount) < 2) {
         sessionStorage.setItem('reloadCount', String(Number(reloadCount) + 1))
         window.location.reload()

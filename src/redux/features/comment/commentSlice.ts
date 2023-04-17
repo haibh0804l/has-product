@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { createAsyncThunk } from '@reduxjs/toolkit'
-import { GetCommentByTaskId } from '../../../data/commentService'
+import { GetCommentByTaskId } from '../../../data/services/commentService'
 import { CommentByTaskIdRepsonse } from '../../../data/database/Comment'
 
 type InitialState = {

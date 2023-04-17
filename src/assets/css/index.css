@@ -81,6 +81,22 @@ p {
   cursor: pointer;
 }
 
+.project-end-row {
+  padding: 10px;
+}
+
+/* .fileListSpace:hover {
+  background-color: green !important;
+}
+
+.hide:hover {
+  background-color: green !important;
+} */
+
+.fileListSpace:hover .hiddenBtn .btnIcon {
+  display: flex !important;
+}
+
 .custom-table-row {
   background-color: white;
 }
@@ -106,9 +122,24 @@ p {
 .ant-btn-primary {
   box-shadow: none;
 }
+
+.project-row:hover .project-end-btn {
+  display: block !important;
+}
+
 .project-btn {
   color: #000000;
   background-color: #d1d5db;
+}
+
+.project-end-btn {
+  color: #000000;
+  background-color: #d1d5db;
+}
+
+.project-end-btn:hover {
+  color: #ffffff !important;
+  background-color: #0e7490;
 }
 
 .project-btn:hover {
@@ -120,7 +151,20 @@ p {
   > .ant-collapse-item
   > .ant-collapse-header
   .ant-collapse-expand-icon {
-  height: 26px;
+  height: 20px;
+}
+.ant-form-item
+  .ant-form-item-control:first-child:not([class^="'ant-col-'"]):not(
+    [class*="' ant-col-'"]
+  ) {
+  max-width: 100% !important;
+}
+
+.quill > .ql-container > .ql-editor.ql-blank::before {
+  font-style: normal;
+  font-size: 14px;
+  color: #cececc;
+  font-family: 'Roboto';
 }
 
 ::-webkit-scrollbar {

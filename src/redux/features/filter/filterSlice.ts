@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { FilterService } from '../../../data/filterService'
+import { FilterService } from '../../../data/services/filterService'
 import {
   DateFilter,
   FilterInterface,
@@ -31,6 +31,7 @@ const initialState: InitialState = {
     priority: [],
     closeDate: {},
     completed: false,
+    closedProject: false,
   },
   loading: false,
   filterResponse: [],
@@ -86,6 +87,12 @@ const filterSlice = createSlice({
     addCompleted: (state, action: PayloadAction<boolean>) => {
       state.filter.completed = action.payload
     },
+    addClosedProject: (state, action: PayloadAction<boolean>) => {
+      state.filter.closedProject = action.payload
+    },
+    addFilter: (state, action: PayloadAction<FilterInterface>) => {
+      state.filter = action.payload
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(fetchFilterResult.pending, (state) => {
@@ -111,6 +118,8 @@ const filterSlice = createSlice({
 })
 
 export const {
+  addClosedProject,
+  addFilter,
   addTabs,
   addManager,
   addTaskName,

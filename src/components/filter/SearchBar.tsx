@@ -1,24 +1,15 @@
-import { faFilter, faPlus, faSearch } from '@fortawesome/free-solid-svg-icons'
+import { faEllipsisH, faSearch } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Button,
-  Checkbox,
-  Col,
-  Input,
-  Row,
-  Select,
-  SelectProps,
-  Space,
-} from 'antd'
-import { stat } from 'fs'
-import { MouseEvent, useEffect, useState } from 'react'
-import { ProjectRepsonse } from '../../data/database/Project'
+import { Checkbox, Col, Input, Popover, Row, Space } from 'antd'
+import { useEffect, useState } from 'react'
 import { Users } from '../../data/database/Users'
 import { useAppDispatch, useAppSelector } from '../../redux/app/hook'
 import {
+  addClosedProject,
   addCompleted,
   addTaskName,
 } from '../../redux/features/filter/filterSlice'
+import { addTaskNameValue } from '../../redux/features/userInfo/userValueSlice'
 import {
   ASSIGNEE,
   MANAGER,
@@ -27,12 +18,9 @@ import {
   SEARCH,
   SELECT,
 } from '../../util/ConfigText'
-import ProjectCreation from '../ProjectCreation'
-import AssigneeSelector from '../selector/AssigneeSelector'
-import ProjectSelector from '../selector/ProjectSelector'
+import ProjectCreation from '../project/ProjectCreation'
 import RemoteSelector from '../selector/RemoteSelector'
 import RemoteSelectorProject from '../selector/RemoteSelectorProject'
-import ReporterSelector from '../selector/ReporterSelector'
 import StatusSelector from '../selector/StatusSelector'
 import FilterOptions from './FilterOptions'
 
@@ -44,17 +32,26 @@ interface SearchBarInput {
   status: any[]
 }
 
-const SearchBar: React.FC<SearchBarInput> = ({ tabs, assignee }) => {
-  const initValue = useAppSelector((state) => state.userValue)
+const SearchBar: React.FC<SearchBarInput> = ({ tabs }) => {
+  const initValue = useAppSelector((state) => state.userValue.filtered)
+  const initFilter = useAppSelector((state) => state.filter)
   const [searchValue, setSearchValue] = useState('')
   const [showCompleted, setShowCompleted] = useState(false)
+  const [showClosedProject, setShowClosedProject] = useState(false)
   const [changeValue, setChangeValue] = useState(false)
   const [spanFilterOption, setSpanFilterOption] = useState(1)
+  const [hideProject, setHideProject] = useState(true)
 
   useEffect(() => {
     if (tabs === '1') {
+      setHideProject(true)
       setSpanFilterOption(4)
     } else {
+      if (tabs === '3') {
+        setHideProject(false)
+      } else {
+        setHideProject(true)
+      }
       setSpanFilterOption(1)
     }
   }, [tabs])
@@ -69,6 +66,7 @@ const SearchBar: React.FC<SearchBarInput> = ({ tabs, assignee }) => {
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       dispatch(addTaskName(searchValue))
+      dispatch(addTaskNameValue(searchValue))
     }, 300)
 
     return () => clearTimeout(delayDebounceFn)
@@ -122,16 +120,45 @@ const SearchBar: React.FC<SearchBarInput> = ({ tabs, assignee }) => {
           <StatusSelector initValue={initValue.status} />
         </Col>
         <Col span={3}>
-          <Checkbox
-            onChange={(e) => {
-              const saveBoolean: boolean = e.target.checked
-              dispatch(addCompleted(saveBoolean))
-              setShowCompleted(!showCompleted)
-            }}
-            style={{ width: 'auto' }}
-          >
-            Show closed tasks
-          </Checkbox>
+          <Space direction="horizontal" size={'small'}>
+            <Checkbox
+              checked={initFilter.filter.completed}
+              onChange={(e) => {
+                const saveBoolean: boolean = e.target.checked
+                dispatch(addCompleted(saveBoolean))
+                setShowCompleted(!showCompleted)
+              }}
+              style={{ width: 'auto' }}
+            >
+              Show closed tasks
+            </Checkbox>
+            {!hideProject && (
+              <Popover
+                placement="bottomRight"
+                //title="Filter"
+                content={
+                  <Checkbox
+                    checked={initFilter.filter.closedProject}
+                    onChange={(e) => {
+                      const saveBoolean: boolean = e.target.checked
+                      dispatch(addCompleted(saveBoolean))
+                      dispatch(addClosedProject(saveBoolean))
+                      setShowClosedProject(!showClosedProject)
+                    }}
+                    style={{ width: 'auto' }}
+                  >
+                    Show closed project
+                  </Checkbox>
+                }
+                trigger="click"
+              >
+                <FontAwesomeIcon
+                  icon={faEllipsisH}
+                  style={{ float: 'right', cursor: 'pointer' }}
+                />
+              </Popover>
+            )}
+          </Space>
         </Col>
       </Row>
     </>

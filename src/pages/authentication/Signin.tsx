@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons'
 import { Form, Card, Button, Input, Spin } from 'antd'
 import { useNavigate } from 'react-router-dom'
@@ -7,20 +7,21 @@ import { useNavigate } from 'react-router-dom'
 import HPTIcon from '../../assets/img/hptIconKnowingIT.png'
 import SignInImage from '../../assets/img/signin-side-image.png'
 import { CustomRoutes } from '../../customRoutes'
-import { GetUserId } from '../../data/userIdService'
+import { GetUserId } from '../../data/services/userIdService'
 import { removeCookie, setCookie } from 'typescript-cookie'
 import '../../assets/css/layout.css'
 import { LOGIN_ERROR, LOGIN_SERVICE_ERROR } from '../../util/ConfigText'
 import { useAppDispatch, useAppSelector } from '../../redux/app/hook'
 import { setUserInfo } from '../../redux/features/userInfo/userInfoSlice'
 import { addManager } from '../../redux/features/filter/filterSlice'
+import { PageName } from '../../data/interface/PageName'
 
 type MessageResponse = {
   message: string
   errorMessage: string
 }
 
-export default () => {
+const Signin: React.FC<PageName> = ({ name }) => {
   removeCookie('user_id')
   removeCookie('userInfo')
   const [form] = Form.useForm()
@@ -33,6 +34,10 @@ export default () => {
   const password = Form.useWatch('password', form)
   const filterInit = useAppSelector((state) => state.filter)
   const dispatch = useAppDispatch()
+
+  useEffect(() => {
+    document.title = name
+  }, [])
 
   const routeChange = (serviceUrl: string) => {
     setLoading(true)
@@ -60,9 +65,9 @@ export default () => {
       })
       .then(async (resText) => {
         const resResponse: MessageResponse = JSON.parse(resText)
-        if (resResponse.errorMessage !== '') {
+        if (resResponse.message !== null && resResponse.message !== '') {
           //alert('Failed to login')
-          setErr(LOGIN_ERROR)
+          setErr(resResponse.message)
           setLoading(false)
           //setShowDefault(true)
         } else {
@@ -77,9 +82,10 @@ export default () => {
             if (r) {
               if (r.code !== 200) {
                 setLoading(false)
-                setErr(LOGIN_SERVICE_ERROR + ' ' + r.code)
+                setErr(r.message + ' ' + r.code)
                 //alert('Service failed with code ' + r.code)
               } else {
+                console.log(JSON.stringify(r))
                 setCookie('user_id', r._id as string, { expires: 1 })
                 setCookie(
                   'user_name',
@@ -93,7 +99,22 @@ export default () => {
                 sessionStorage.setItem('user_id', r._id as string)
                 dispatch(setUserInfo(r))
 
-                navigate(CustomRoutes.MyWork.path)
+                if (sessionStorage.getItem('location')) {
+                  /* console.log(sessionStorage.getItem('location')!) */
+                  if (
+                    JSON.parse(sessionStorage.getItem('location')!).pathname !==
+                    '/'
+                  ) {
+                    navigate(
+                      JSON.parse(sessionStorage.getItem('location')!).pathname,
+                    )
+                  } else {
+                    navigate(CustomRoutes.MyWork.path)
+                  }
+                  sessionStorage.removeItem('location')
+                } else {
+                  navigate(CustomRoutes.MyWork.path)
+                }
               }
             } else {
               setLoading(false)
@@ -225,3 +246,4 @@ export default () => {
     </>
   )
 }
+export default Signin

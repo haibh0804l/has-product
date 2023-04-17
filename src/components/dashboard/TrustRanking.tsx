@@ -39,20 +39,24 @@ const columns: ColumnsType<DataType> = [
     title: 'Rank',
     dataIndex: 'rank',
     align: 'center',
+    width: '10%',
   },
   {
     title: 'Name',
     dataIndex: 'name',
+    width: '50%',
   },
   {
     title: 'Department',
     dataIndex: 'department',
     align: 'center',
+    width: '20%',
   },
   {
     title: 'Score',
     dataIndex: 'score',
     align: 'center',
+    width: '20%',
   },
 ]
 const MedalIcon: React.FC<ScoreRankingMedal> = ({ index }) => {

@@ -11,13 +11,13 @@ import { ToLowerCaseNonAccentVietnamese } from '../util/FormatText'
 import _ from 'lodash'
 import { useAppDispatch, useAppSelector } from '../redux/app/hook'
 import { SearchBar } from './filter/SearchBar'
-import Project from './Project'
+import Project from './project/Project'
 import { Role } from '../data/database/Role'
 import { getCookie } from 'typescript-cookie'
 import { fetchPersonalScore } from '../redux/features/report/personalScoreSlice'
 import { PersonalScoreRequest } from '../data/database/Report'
 import { Users } from '../data/database/Users'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   addAssignee,
   addManager,
@@ -25,27 +25,16 @@ import {
   addTabs,
 } from '../redux/features/filter/filterSlice'
 import { revertAll } from '../util/ConfigText'
+import { CustomRoutes } from '../customRoutes'
 
-interface TaskInput {
-  assigneeTask: Tasks[]
-  otherTask: Tasks[]
-  assigneeTaskNum: number
-  otherTaskNum: number
-}
-
-const App: React.FC<TaskInput> = ({
-  assigneeTask,
-  otherTask,
-  assigneeTaskNum,
-  otherTaskNum,
-}) => {
-  const navigate = useNavigate()
+const App: React.FC = ({}) => {
+  const defaultTabs = useParams()
   const userInfo: Users = JSON.parse(getCookie('userInfo')!)
   const role: Role = JSON.parse(getCookie('userInfo') as string).Role
   const [myScore, setMyScore] = useState('')
-
+  const [defaultTab, setDefaultTab] = useState()
+  const [scoreMonth, setScoreMonth] = useState('')
   //let scoreMonth = ''
-  const [items, setItems] = useState<any[]>([])
   const [collapseShowMore, setCollapseShowMore] = useState(true)
   const numOfAssigneeTasks = useAppSelector(
     (state) => state.myTaskList.numOfTask,
@@ -55,7 +44,7 @@ const App: React.FC<TaskInput> = ({
   )
   const personalScoreReq: PersonalScoreRequest = {
     userId: getCookie('user_id')!,
-    department: userInfo.Department,
+    department: userInfo.Group![0].Name,
     baseOnMonth: 1,
   }
 
@@ -63,7 +52,15 @@ const App: React.FC<TaskInput> = ({
   const dispatch = useAppDispatch()
 
   useEffect(() => {
-    dispatch(fetchPersonalScore(personalScoreReq))
+    if (sessionStorage.getItem('tab')) {
+      if (sessionStorage.getItem('tab') !== '1') {
+        setScoreMonth('')
+      } else {
+        dispatch(fetchPersonalScore(personalScoreReq))
+      }
+    } else {
+      dispatch(fetchPersonalScore(personalScoreReq))
+    }
   }, [])
 
   useEffect(() => {
@@ -84,10 +81,7 @@ const App: React.FC<TaskInput> = ({
       }
     }
   }, [_myScore.loading, _myScore.score.length])
-  const scoreMonthHandle = 'My score this month : ' + myScore
-  const [scoreMonth, setScoreMonth] = useState(
-    'My score this month : ' + myScore,
-  )
+
   const OnChange = (key: string) => {
     sessionStorage.setItem('tab', key)
     if (key === '1') {
@@ -116,7 +110,9 @@ const App: React.FC<TaskInput> = ({
           <Tabs
             tabBarExtraContent={scoreMonth}
             defaultActiveKey={
-              sessionStorage.getItem('tab')?.toString()
+              defaultTabs.id
+                ? defaultTabs.id
+                : sessionStorage.getItem('tab')?.toString()
                 ? sessionStorage.getItem('tab')?.toString()
                 : '1'
             }
@@ -189,7 +185,9 @@ const App: React.FC<TaskInput> = ({
         <Tabs
           tabBarExtraContent={scoreMonth}
           defaultActiveKey={
-            sessionStorage.getItem('tab')?.toString()
+            defaultTabs.id
+              ? defaultTabs.id
+              : sessionStorage.getItem('tab')?.toString()
               ? sessionStorage.getItem('tab')?.toString()
               : '1'
           }

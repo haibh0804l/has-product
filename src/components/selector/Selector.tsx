@@ -2,7 +2,7 @@ import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Select, Space } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
-import { GetAllFilter } from '../../data/allUsersService'
+import { GetAllFilter } from '../../data/services/allUsersService'
 import { Users } from '../../data/database/Users'
 import UserIcon from '../UserIcon'
 
@@ -12,6 +12,7 @@ interface SelectorInput {
   onChangeFunc?: (e: string[]) => void
   onDeleteTag?: (e: string) => void
   clearAll?: boolean
+  initValue: string[]
 }
 
 const { Option } = Select
@@ -21,8 +22,9 @@ const Selector: React.FC<SelectorInput> = ({
   type,
   onChangeFunc,
   clearAll,
+  initValue,
 }) => {
-  const [innerValue, setInnerValue] = useState<string[]>()
+  const [innerValue, setInnerValue] = useState<string[]>([])
   const [userList, setUserList] = useState<Users[]>()
 
   const fetchData = useCallback(async () => {
@@ -33,6 +35,12 @@ const Selector: React.FC<SelectorInput> = ({
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  useEffect(() => {
+    if (initValue.length !== 0) {
+      setInnerValue(initValue)
+    }
+  }, [initValue])
 
   useEffect(() => {
     if (clearAll) {
@@ -70,7 +78,10 @@ const Selector: React.FC<SelectorInput> = ({
         }}
         optionLabelProp="label"
         filterOption={(input, option) =>
-          (option?.label ?? '').toString().includes(input)
+          (option?.label ?? '')
+            .toString()
+            .toLowerCase()
+            .includes(input.toLowerCase())
         }
         value={innerValue}
         listHeight={120}

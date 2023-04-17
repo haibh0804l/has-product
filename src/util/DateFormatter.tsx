@@ -47,19 +47,21 @@ const DateFormatter: React.FC<DateString> = ({
       let noTimeZoneDate = new Date(new Date(dateString).getTime())
       let da = noTimeZoneDate.toLocaleString('en-GB', { day: 'numeric' })
       let mo = noTimeZoneDate.toLocaleString('en-GB', { month: 'numeric' })
+      let ye = noTimeZoneDate.toLocaleString('en-GB', { year: '2-digit' })
       let ho = noTimeZoneDate.toLocaleString('en-GB', { hour: '2-digit' })
       let mi = noTimeZoneDate.toLocaleString('en-GB', { minute: '2-digit' })
       let se = noTimeZoneDate.toLocaleString('en-GB', { second: '2-digit' })
       da = FormatDateNum(da)
       mo = FormatDateNum(mo)
+      ye = FormatDateNum(ye)
       ho = FormatSmallNum(ho)
       mi = FormatSmallNum(mi)
       se = FormatSmallNum(se)
       let output = ''
       if (ho === '23' && mi === '59' && se === '59') {
-        output = da + '/' + mo
+        output = da + '/' + mo + '/' + ye
       } else {
-        output = da + '/' + mo + ' , ' + ho + ':' + mi
+        output = da + '/' + mo + '/' + ye + ' , ' + ho + ':' + mi
       }
 
       if (task.Status === 'Completed' || task.Status === 'Incompleted') {
@@ -88,19 +90,21 @@ const DateFormatter: React.FC<DateString> = ({
       let noTimeZoneDate = new Date(new Date(dateString).getTime())
       let da = noTimeZoneDate.toLocaleString('en-GB', { day: 'numeric' })
       let mo = noTimeZoneDate.toLocaleString('en-GB', { month: 'numeric' })
+      let ye = noTimeZoneDate.toLocaleString('en-GB', { year: '2-digit' })
       let ho = noTimeZoneDate.toLocaleString('en-GB', { hour: '2-digit' })
       let mi = noTimeZoneDate.toLocaleString('en-GB', { minute: '2-digit' })
       let se = noTimeZoneDate.toLocaleString('en-GB', { second: '2-digit' })
       da = FormatDateNum(da)
       mo = FormatDateNum(mo)
+      ye = FormatDateNum(ye)
       ho = FormatSmallNum(ho)
       mi = FormatSmallNum(mi)
       se = FormatSmallNum(se)
       let output = ''
       if (ho === '23' && mi === '59' && se === '59') {
-        output = da + '/' + mo
+        output = da + '/' + mo + '/' + ye
       } else {
-        output = da + '/' + mo + ' , ' + ho + ':' + mi
+        output = da + '/' + mo + '/' + ye + ' , ' + ho + ':' + mi
       }
 
       return <>{output}</>

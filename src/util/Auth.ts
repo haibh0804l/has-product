@@ -1,4 +1,3 @@
-import { Users } from '../data/database/Users'
 import { TaskDetailsProps } from '../data/interface/ComponentsJson'
 
 const Auth = (
@@ -7,6 +6,7 @@ const Auth = (
   reporterId: string,
   manager: string[],
 ) => {
+  //console.log('Managers ' + JSON.stringify(manager) + ' User ' + userId)
   let props: TaskDetailsProps = {
     isNotAuthorize: false,
     isTaskNameReadOnly: false,

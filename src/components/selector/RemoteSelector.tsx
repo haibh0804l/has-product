@@ -3,7 +3,7 @@ import { Select, Spin } from 'antd'
 import type { SelectProps } from 'antd/es/select'
 import debounce from 'lodash/debounce'
 import axios from 'axios'
-import { GetAllFilter } from '../../data/allUsersService'
+import { GetAllFilter } from '../../data/services/allUsersService'
 import { Users } from '../../data/database/Users'
 import { useAppDispatch, useAppSelector } from '../../redux/app/hook'
 import { ASSIGNEE, REPORTER } from '../../util/ConfigText'
@@ -18,7 +18,7 @@ import {
   addProjectValue,
   addReporterValue,
 } from '../../redux/features/userInfo/userValueSlice'
-import { GetUsersByManager } from '../../data/projectService'
+import { GetUsersByManager } from '../../data/services/projectService'
 import { getCookie } from 'typescript-cookie'
 import { ToLowerCaseNonAccentVietnamese } from '../../util/FormatText'
 

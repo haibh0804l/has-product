@@ -11,7 +11,7 @@ import {
   GetPersonalScore,
   GetScoreRanking,
   GetTrustScore,
-} from '../../../data/reportService'
+} from '../../../data/services/reportService'
 
 type InitialState = {
   loading: boolean

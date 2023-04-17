@@ -49,9 +49,8 @@ const items: MenuItem[] = [
     'My Work',
     'My Work',
     <Link to={CustomRoutes.MyWork.path}>
-       <FontAwesomeIcon icon={faArchive} />
-       
-     </Link>,
+      <FontAwesomeIcon icon={faArchive} />
+    </Link>,
   ),
   // getItem('Work', 'Work', <FontAwesomeIcon icon={faTasks} />, [
   //   getItem(
@@ -61,7 +60,7 @@ const items: MenuItem[] = [
   //       <FontAwesomeIcon icon={faArchive} />
   //     </Link>,
   //   ),
-    /*  getItem(
+  /*  getItem(
       'My Space',
       'My Space',
       <Link to={CustomRoutes.About.path}>

@@ -2,13 +2,16 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Select, Spin } from 'antd'
 import type { SelectProps } from 'antd/es/select'
 import debounce from 'lodash/debounce'
-import { GetAllFilter, GetUserByType } from '../../data/allUsersService'
+import { GetUserByType } from '../../data/services/allUsersService'
 import { Users } from '../../data/database/Users'
 import { SelectorValue } from '../../data/interface/SelectorValue'
-import { GetProject, GetUsersByProject } from '../../data/projectService'
+import {
+  GetProject,
+  GetUsersByProject,
+} from '../../data/services/projectService'
 import { getCookie } from 'typescript-cookie'
 import { ProjectRepsonse } from '../../data/database/Project'
-import { ASSIGNEE, MANAGER, PROJECT } from '../../util/ConfigText'
+import { ASSIGNEE, PROJECT } from '../../util/ConfigText'
 import { ToLowerCaseNonAccentVietnamese } from '../../util/FormatText'
 
 interface RemoteSelectorInput {
@@ -18,9 +21,10 @@ interface RemoteSelectorInput {
   disabled?: boolean
   onChangeSelectorFunc?: (e: any) => void
   mode?: 'multiple' | 'tags' | undefined
-  isProjectFixed?: boolean
+  isProjectFixed: boolean
   projectId?: string
   isProjectChange?: boolean
+  projectStatus?: string
 }
 
 export interface DebounceSelectProps<ValueType = any>
@@ -82,11 +86,12 @@ function DebounceSelect<
 async function fetchUserList(
   searchValue: string,
   type: string,
-  isProjectFixed?: boolean,
+  isProjectFixed: boolean,
   projectId?: string,
+  projectStatus?: string,
 ): Promise<SelectorValue[]> {
   if (type === PROJECT) {
-    return GetProject(getCookie('user_id')!, 'All')
+    return GetProject(getCookie('user_id')!, 'All', projectStatus)
       .then((response) => response.data as ProjectRepsonse[])
       .then((body) =>
         body
@@ -230,6 +235,7 @@ const RemoteSelectorSingle: React.FC<RemoteSelectorInput> = ({
   isProjectFixed,
   projectId,
   isProjectChange,
+  projectStatus,
 }) => {
   const [value, setValue] = useState<SelectorValue>()
 
@@ -256,7 +262,9 @@ const RemoteSelectorSingle: React.FC<RemoteSelectorInput> = ({
       allowClear
       value={value}
       placeholder={placeHolder}
-      fetchOptions={(e) => fetchUserList(e, type, isProjectFixed, projectId)}
+      fetchOptions={(e) =>
+        fetchUserList(e, type, isProjectFixed, projectId, projectStatus)
+      }
       onChange={(newValue) => {
         onChangeSelector(newValue as SelectorValue)
       }}

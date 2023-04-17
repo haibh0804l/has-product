@@ -39,20 +39,24 @@ const columns: ColumnsType<DataType> = [
     title: 'Rank',
     dataIndex: 'rank',
     align: 'center',
+    width: '10%',
   },
   {
     title: 'Name',
     dataIndex: 'name',
+    width: '50%',
   },
   {
     title: 'Department',
     dataIndex: 'department',
     align: 'center',
+    width: '20%',
   },
   {
     title: 'Score',
     dataIndex: 'score',
     align: 'center',
+    width: '20%',
   },
 ]
 const MedalIcon: React.FC<ScoreRankingMedal> = ({ index }) => {
@@ -105,7 +109,7 @@ const ScoreRanking: React.FC<ScoreRankingInput> = ({
         name: <p>{element.LastName + ' ' + element.FirstName}</p>,
         department: <p>{element.Department}</p>,
         score: <p>{element.TotalScore}</p>,
-        key: element._id!,
+        key: element._id! + ' ' + element.TotalScore,
       })
     }
     setTableData(data)
@@ -121,16 +125,37 @@ const ScoreRanking: React.FC<ScoreRankingInput> = ({
           label: 'BA',
         },
         {
+          value: 'DA',
+          label: 'DA',
+        },
+        {
+          value: 'DE',
+          label: 'DE',
+        },
+        {
+          value: 'DT',
+          label: 'DT',
+        },
+
+        {
           value: 'R&D',
           label: 'R&D',
+        },
+        {
+          value: 'PD',
+          label: 'PD',
         },
         {
           value: 'PMO',
           label: 'PMO',
         },
         {
-          value: 'SALES',
-          label: 'SALES',
+          value: 'SALES_HN',
+          label: 'SALES_HN',
+        },
+        {
+          value: 'SALES_HCM',
+          label: 'SALES_HCM',
         },
       ])
     } else {
@@ -202,7 +227,10 @@ const ScoreRanking: React.FC<ScoreRankingInput> = ({
           placeholder="Seach to select"
           optionFilterProp="children"
           filterOption={(input, option) =>
-            (option?.label ?? '').includes(input)
+            (option?.label ?? '')
+              .toString()
+              .toLowerCase()
+              .includes(input.toLowerCase())
           }
           filterSort={(optionA, optionB) =>
             (optionA?.label ?? '')
@@ -229,7 +257,11 @@ const ScoreRanking: React.FC<ScoreRankingInput> = ({
         rowClassName={(record, index) => {
           return 'custom-table-row'
         }}
-        pagination={{ pageSize: 5 }}
+        pagination={{
+          defaultCurrent: 1,
+          defaultPageSize: 5,
+          pageSizeOptions: ['5', '10', '15', '20'],
+        }}
         columns={columns}
         dataSource={tableData}
         size="small"

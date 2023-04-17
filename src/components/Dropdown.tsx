@@ -5,7 +5,7 @@ import FindIcon from '../data/util'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFlag, faSquare } from '@fortawesome/free-solid-svg-icons'
 import { statusData } from '../data/statusData'
-import { UpdateTask } from '../data/tasksService'
+import { UpdateTask } from '../data/services/tasksService'
 import { HIDE, INSERT_MODE, UPDATE_FAIL, UPDATE_MODE } from '../util/ConfigText'
 import { Status } from '../data/interface/Status'
 import { Tasks } from '../data/database/Tasks'
@@ -16,6 +16,7 @@ import { getCookie } from 'typescript-cookie'
 import { ScoreCompProp } from '../data/interface/ScoreCompProps'
 import { TaskDetailsProps } from '../data/interface/ComponentsJson'
 import Auth from '../util/Auth'
+import GetStatusIgnoreList from '../util/StatusList'
 
 interface Type {
   type: string
@@ -42,7 +43,7 @@ const DropdownProps: React.FC<Type> = ({
   task,
   disabled,
 }) => {
-  let items: MenuProps['items'] = []
+  const [items, setItems] = useState<MenuProps['items']>([])
   const [loading, setLoading] = useState(false)
 
   const [newStatus, setNewStatus] = useState('')
@@ -51,6 +52,9 @@ const DropdownProps: React.FC<Type> = ({
   const [defaultScore, setDefaultScore] = useState(0)
   const [score, setScore] = useState(false)
   const [disableComp, setDisableComp] = useState(false)
+  const [ignoreSttList, setIgnoreSttList] = useState<Status[]>(
+    ignoreStt ? ignoreStt : [],
+  )
 
   useEffect(() => {
     if (mode && mode !== INSERT_MODE) {
@@ -68,11 +72,54 @@ const DropdownProps: React.FC<Type> = ({
         if (type === 'Status') {
           setDisableComp(props.isStatusReadOnly)
         } else {
-          setDisableComp(props.isStatusReadOnly)
+          setDisableComp(props.isPriorityReadOnly)
         }
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (ignoreStt) {
+      setIgnoreSttList(ignoreStt)
+    }
+  }, [ignoreStt])
+
+  useEffect(() => {
+    if (type === 'Priority') {
+      setItems(priority)
+    } else {
+      if (ignoreSttList !== undefined) {
+        const _items: MenuProps['items'] = []
+        const r = statusData.filter(
+          (elem) => !ignoreSttList.find(({ id }) => elem.id === id),
+        )
+
+        r.forEach((element) => {
+          _items?.push(
+            {
+              label: (
+                <>
+                  <Space>
+                    <FontAwesomeIcon icon={faSquare} color={element.color} />
+                    <h4>{element.name}</h4>
+                  </Space>
+                </>
+              ),
+              key: element.name,
+              onClick: (e) => getStatusValue(e.key),
+            },
+            {
+              type: 'divider',
+            },
+          )
+        })
+        //items = status
+        setItems(_items)
+      } else {
+        setItems(status)
+      }
+    }
+  }, [type, ignoreSttList])
 
   const OnCloseFunc = () => {
     setMiniModal(false)
@@ -86,11 +133,24 @@ const DropdownProps: React.FC<Type> = ({
     setTxt(text)
   }, [text])
 
-  async function updateService(inputTask: InputTasks, taskId?: string) {
+  async function updateService(
+    inputTask: InputTasks,
+    taskId: string,
+    sttValue?: string,
+  ) {
     if (taskId !== undefined) {
       setLoading(true)
       await UpdateTask('/api/task/', taskId, inputTask)
         .then((r) => {
+          if (type !== 'Priority') {
+            const _ignoreList: Status[] = GetStatusIgnoreList(
+              getCookie('user_id')?.toString()!,
+              task?.Assignee[0]._id!,
+              task?.Reporter._id!,
+              sttValue!,
+            )
+            setIgnoreSttList(_ignoreList)
+          }
           setLoading(false)
         })
         .catch((error) => {
@@ -116,7 +176,7 @@ const DropdownProps: React.FC<Type> = ({
       Priority: value,
     }
     if (mode === undefined || mode === UPDATE_MODE) {
-      updateService(inputTask, taskId)
+      updateService(inputTask, taskId!)
     }
 
     if (onClickMenu) onClickMenu(value)
@@ -124,7 +184,7 @@ const DropdownProps: React.FC<Type> = ({
     //console.log('Priority :' + sessionStorage.getItem('priority'))
   }
 
-  function getStatusValue(value: string) {
+  async function getStatusValue(value: string) {
     setTxt(value)
     sessionStorage.setItem('status' + id, value)
     //call update service
@@ -164,7 +224,7 @@ const DropdownProps: React.FC<Type> = ({
       setReadOnly(true)
       setMiniModal(false)
       if (mode === undefined || mode === UPDATE_MODE) {
-        updateService(inputTask, taskId)
+        updateService(inputTask, taskId!, value)
       }
       if (onClickMenu) {
         onClickMenu(value)
@@ -321,7 +381,7 @@ const DropdownProps: React.FC<Type> = ({
       onClick: (e) => getStatusValue(e.key),
     },
   ]
-
+  /* 
   if (type === 'Priority') {
     items = priority
   } else {
@@ -353,11 +413,11 @@ const DropdownProps: React.FC<Type> = ({
     } else {
       items = status
     }
-  }
+  } */
 
   return (
     <>
-      {items.length > 0 ? (
+      {items && items.length > 0 ? (
         <Dropdown
           menu={{
             items,

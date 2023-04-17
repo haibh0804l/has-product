@@ -1,9 +1,13 @@
 #components-layout-demo-basic .code-box-demo {
   text-align: center;
 }
-.ant-layout-header,
+
 .ant-layout-footer {
   color: #fff;
+  background: #ffffff !important;
+}
+
+.ant-layout-header {
   background: #ffffff !important;
 }
 #components-layout-demo-basic .ant-layout-footer {
