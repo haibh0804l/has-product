@@ -1,4 +1,5 @@
-import { configureStore } from '@reduxjs/toolkit'
+import { combineReducers, configureStore } from '@reduxjs/toolkit'
+import storage from 'redux-persist/lib/storage'
 import cakeReducer from '../features/cake/cakeSlice'
 import icecreamReducer from '../features/icecream/icecreamSlice'
 import userReducer from '../features/user/userSlice'
@@ -16,6 +17,36 @@ import commentReducer from '../features/comment/commentSlice'
 import filterReducer from '../features/filter/filterSlice'
 import userValueReducer from '../features/userInfo/userValueSlice'
 import trustScoreReducer from '../features/report/trustScoreSlice'
+import routeReducer from '../features/routes/routeSlice'
+import { persistReducer, persistStore } from 'redux-persist'
+
+/* const persistConfig = {
+  key: 'root',
+  storage,
+} */
+
+const reducers = combineReducers({
+  cake: cakeReducer,
+  icecream: icecreamReducer,
+  user: userReducer,
+  users: usersReducer,
+  errorMessage: errorReducer,
+  assigneeTasks: assigneeTaskSliceReducer,
+  reporterTasks: reporterTaskSliceReducer,
+  myTaskList: myTaskReducer,
+  reportToMeTaskList: reportToMeTaskReducer,
+  history: historyReducer,
+  userInfo: userInfoReducer,
+  scoreRanking: scoreRankingReducer,
+  personalScore: personalScoreReducer,
+  comment: commentReducer,
+  filter: filterReducer,
+  userValue: userValueReducer,
+  trustScore: trustScoreReducer,
+  route: routeReducer,
+})
+
+/* const persistedReducers = persistReducer(persistConfig, reducers) */
 
 const store = configureStore({
   reducer: {
@@ -36,6 +67,7 @@ const store = configureStore({
     filter: filterReducer,
     userValue: userValueReducer,
     trustScore: trustScoreReducer,
+    route: routeReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -48,17 +80,18 @@ const store = configureStore({
           'userValue/addCloseDateValue',
         ],
         // Ignore these field paths in all actions
-        //ignoredActionPaths: ['meta.arg', 'payload.timestamp'],
+        //ignoredActionPaths: ['userValue.filter.dueDate.0'],
+
         // Ignore these paths in the state
         ignoredPaths: [
           'filter.filter.dueDate.fromDate',
           'filter.filter.dueDate.toDate',
           'filter.filter.closeDate.fromDate',
           'filter.filter.closeDate.toDate',
-          'userValue.dueDate.0',
-          'userValue.dueDate.1',
-          'userValue.closeDate.0',
-          'userValue.closeDate.1',
+          'userValue.filtered.dueDate.0',
+          'userValue.filtered.dueDate.1',
+          'userValue.filtered.closeDate.0',
+          'userValue.filtered.closeDate.1',
         ],
       },
     }),
@@ -67,3 +100,4 @@ const store = configureStore({
 export default store
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
+/* export const persistor = persistStore(store) */

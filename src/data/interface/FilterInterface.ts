@@ -16,6 +16,7 @@ export interface FilterInterface {
   dueDate?: DateFilter
   closeDate?: DateFilter
   completed?: boolean
+  closedProject?: boolean
 }
 
 export interface FilterRequest {
@@ -29,5 +30,6 @@ export interface FilterRequestWithType {
 export interface FilterResponse {
   ProjectId?: string
   ProjectName?: string
+  Status?: string
   Tasks?: Tasks[]
 }

@@ -5,7 +5,10 @@ import {
   PersonalScoreResponse,
   ScoreRankingRequest,
 } from '../../../data/database/Report'
-import { GetPersonalScore, GetScoreRanking } from '../../../data/reportService'
+import {
+  GetPersonalScore,
+  GetScoreRanking,
+} from '../../../data/services/reportService'
 
 type InitialState = {
   loading: boolean

@@ -1,38 +1,24 @@
-import React, { memo, useCallback, useEffect, useState } from 'react'
-import {
-  Table,
-  Layout,
-  Button,
-  Input,
-  Checkbox,
-  Spin,
-  Modal,
-  MenuProps,
-  Row,
-  Col,
-  Space,
-} from 'antd'
+import React, { useEffect, useState } from 'react'
+import { Table, Button, Spin, MenuProps, Space } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import DropdownProps from '../Dropdown'
 import '../../assets/css/index.css'
 import { Tasks } from '../../data/database/Tasks'
 import ParagraphExample from '../ParagraphExample'
 import DateFormatter from '../../util/DateFormatter'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { CustomRoutes } from '../../customRoutes'
 import { Status } from '../../data/interface/Status'
 import { getCookie } from 'typescript-cookie'
 import { useAppDispatch, useAppSelector } from '../../redux/app/hook'
 import GetStatusIgnoreList from '../../util/StatusList'
-import { ASSIGNEE, SEARCH } from '../../util/ConfigText'
-import {
-  FilterRequest,
-  FilterRequestWithType,
-} from '../../data/interface/FilterInterface'
+import { ASSIGNEE, revertAll } from '../../util/ConfigText'
+import { FilterRequestWithType } from '../../data/interface/FilterInterface'
 import { SearchBar } from '../filter/SearchBar'
 import {
   addAssignee,
   addManager,
+  addTabs,
   fetchFilterResult,
 } from '../../redux/features/filter/filterSlice'
 import { myTaskChange } from '../../redux/features/myTask/myTaskSlice'
@@ -61,6 +47,7 @@ let countIndex = 0
 let inputLength = 0
 
 const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
+  const tab = useParams()
   const navigate = useNavigate()
   const location = useLocation()
   const refresh = location.state
@@ -74,6 +61,7 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
   const [dataInput, setDataInput] = useState<DataType[]>([])
   const [dataSplice, setDataSplice] = useState<DataType[]>([])
   const filterInit = useAppSelector((state) => state.filter)
+  const filterValue = useAppSelector((state) => state.userValue)
   const dispatch = useAppDispatch()
 
   const columns: ColumnsType<DataType> = [
@@ -765,12 +753,14 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
   }
 
   const handleMenuClickStatus: MenuProps['onClick'] = (e) => {
-    setLoading(true)
+    //setLoading(true)
   }
 
   useEffect(() => {
+    dispatch(revertAll())
     dispatch(addManager([]))
     dispatch(addAssignee([getCookie('user_id')!]))
+    dispatch(addTabs('1'))
     try {
       const s = refresh.refresh
       if (refresh.refresh === true) {
@@ -804,6 +794,7 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
             dispatch(myTaskChange(filterInit.filterResponse.length))
           }
         } else {
+          dispatch(myTaskChange(0))
           setInput([])
           ReorderTask([])
           setLoading(false)
@@ -814,7 +805,7 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      if (filterInit.tabs === '1') {
+      if (tab.id && tab.id === '1') {
         setLoading(true)
         //check for any change here
         const filterReq: FilterRequestWithType = {
@@ -822,6 +813,16 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
           type: ASSIGNEE,
         }
         dispatch(fetchFilterResult(filterReq))
+      } else {
+        if (filterInit.tabs === '1') {
+          setLoading(true)
+          //check for any change here
+          const filterReq: FilterRequestWithType = {
+            filter: filterInit.filter,
+            type: ASSIGNEE,
+          }
+          dispatch(fetchFilterResult(filterReq))
+        }
       }
     }, 200)
 
@@ -883,4 +884,4 @@ const TaskList: React.FC<InputData> = ({ showMore, collapseShowMore }) => {
   )
 }
 
-export default memo(TaskList)
+export default TaskList

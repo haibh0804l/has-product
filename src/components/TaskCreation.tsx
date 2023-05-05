@@ -16,12 +16,12 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import '../assets/css/index.css'
 import DropdownProps from './Dropdown'
 import { Users } from '../data/database/Users'
-import { GetUserByType } from '../data/allUsersService'
+import { GetUserByType } from '../data/services/allUsersService'
 import { DatePicker } from 'antd'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import { faCalendar } from '@fortawesome/free-regular-svg-icons'
-import { InsertTask } from '../data/tasksService'
+import { InsertTask } from '../data/services/tasksService'
 import OverDueDate from '../util/OverDueDate'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
@@ -30,6 +30,7 @@ import { useNavigate } from 'react-router-dom'
 import { Tasks } from '../data/database/Tasks'
 import SubTask from './SubTasks'
 import {
+  ACTIVE,
   ASSIGNEE,
   DEFAULT_STT,
   INSERT_MODE,
@@ -41,22 +42,16 @@ import ObjectID from 'bson-objectid'
 import { SubTaskCompProp, SubTaskProp } from '../data/interface/SubTaskProp'
 import axios from 'axios'
 import { AttachmentResponse } from '../data/database/Attachment'
-import { fetchTasksAssignee } from '../redux/features/tasks/assigneeTaskSlice'
-import { Params } from '../data/interface/task'
 import { useAppDispatch, useAppSelector } from '../redux/app/hook'
-import { fetchTasksReporter } from '../redux/features/tasks/reporterTaskSlice'
 import { CheckExtension } from '../util/Extension'
 import { InputTasks } from '../data/database/InputTasks'
-import { RemoveAttachment } from '../data/attachmentService'
+import { RemoveAttachment } from '../data/services/attachmentService'
 import { SelectorValue } from '../data/interface/SelectorValue'
 import RemoteSelectorSingle from './selector/RemoteSelectorSingle'
 import { fetchFilterResult } from '../redux/features/filter/filterSlice'
-import {
-  FilterRequest,
-  FilterRequestWithType,
-} from '../data/interface/FilterInterface'
+import { FilterRequestWithType } from '../data/interface/FilterInterface'
 import { ProjectRepsonse, ProjectRequest } from '../data/database/Project'
-import { GetUsersByProject } from '../data/projectService'
+import { GetUsersByProject } from '../data/services/projectService'
 
 interface AttachmentProps {
   uid: string
@@ -69,6 +64,7 @@ interface TaskCreationInput {
   projectValue?: SelectorValue
   isProjectFixed: boolean
   projectId?: string
+  id: string
 }
 
 let taskKey = 'Item'
@@ -91,8 +87,8 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
   projectValue,
   isProjectFixed,
   projectId,
+  id,
 }) => {
-  const id = ObjectID(new Date().getTime()).toHexString()
   const initFilter = useAppSelector((state) => state.filter)
   const navigate = useNavigate()
   //let reporterOptions: ItemProps[] = []
@@ -158,6 +154,10 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
   const [isProjectChange, setIsProjectChange] = useState(false)
   const [attachment, setAttachment] = useState<AttachmentProps[]>([])
   const [disableSubmit, setDisableSubmit] = useState(false)
+  const [disabledForm, setDisableForm] = useState(false)
+  const [disabledSubtask, setDisabledSubtask] = useState(false)
+
+  const filterInit = useAppSelector((state) => state.filter)
   const dispatch = useAppDispatch()
 
   useEffect(() => {
@@ -396,12 +396,13 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
   }
 
   const clearData = () => {
+    setTaskName('')
+    setDueDate('')
     setValue([])
   }
 
   const SubTaskCom: React.FC<SubTaskProp> = ({ index, subTaskId }) => {
     const onFinish = (values: any) => {
-      console.log('Sucess ' + JSON.stringify(values))
       const _task: Tasks = JSON.parse(JSON.stringify(values))
       _task.Status = DEFAULT_STT
       _task.CreateDate = new Date()
@@ -430,6 +431,10 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
       if (getCookie('projectId')) {
         _task.Project = { _id: getCookie('projectId') } as ProjectRequest
       }
+
+      if (project) {
+        _task.Project = { _id: project.value } as ProjectRequest
+      }
       _task.ParentTask = id
 
       //subTask.push(_task)
@@ -442,7 +447,6 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
         //setSubTask([...subTask, _task])
       } else {
         //update
-        console.log('Update the id')
         for (let indexS = 0; indexS < subTask.length; indexS++) {
           if (subTask[indexS]._id === _task._id) {
             subTask[indexS] = _task
@@ -454,6 +458,7 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
     }
 
     const onFinishFailed = (values: any) => {
+      message.error('Create task failed.Please try again ')
       console.log('Failed ' + JSON.stringify(values))
     }
 
@@ -467,6 +472,7 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
           reporterData={reporterData}
           mode={INSERT_MODE}
           taskId={subTaskId}
+          disabled={disabledSubtask}
         />
       </Space>
     ) : (
@@ -569,14 +575,14 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
 
     _subTaskFilter.unshift(myInputTask)
 
+    _subTaskFilter.forEach((element) => {})
+
     const myRealInputTask: InputTasks = {
       userId: getCookie('user_id')!.toString(),
       userName: getCookie('user_name')!.toString(),
       tasks: _subTaskFilter,
     }
 
-    console.log('Project ' + JSON.stringify(myRealInputTask))
-    //console.log('Attachment ' + JSON.stringify(attachmentList))
     await InsertTask(
       'api/task/addTaskWithSubtask',
       JSON.stringify(myRealInputTask),
@@ -587,19 +593,21 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
     sessionStorage.setItem('priority' + taskKey, 'Medium')
     sessionStorage.setItem('status' + taskKey, 'To do')
 
-    const params: Params = {
-      serviceUrl: '',
-      type: getCookie('user_id')?.toString()!,
-      //userId: getCookie('user_id')?.toString(),
-    }
-
     if (sessionStorage.getItem('tab')?.toString()) {
       if (sessionStorage.getItem('tab')?.toString() === '1') {
         //my work
-        dispatch(fetchTasksAssignee(params))
+        const filterReq: FilterRequestWithType = {
+          filter: filterInit.filter,
+          type: ASSIGNEE,
+        }
+        dispatch(fetchFilterResult(filterReq))
       } else if (sessionStorage.getItem('tab')?.toString() === '2') {
         //report
-        dispatch(fetchTasksReporter(params))
+        const filterReq: FilterRequestWithType = {
+          filter: filterInit.filter,
+          type: REPORTER,
+        }
+        dispatch(fetchFilterResult(filterReq))
       } else {
         const filterRequest: FilterRequestWithType = {
           filter: initFilter.filter,
@@ -610,21 +618,29 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
     } else {
       //nothing here yet
       //my work
-      dispatch(fetchTasksAssignee(params))
+      const filterReq: FilterRequestWithType = {
+        filter: filterInit.filter,
+        type: ASSIGNEE,
+      }
+      dispatch(fetchFilterResult(filterReq))
     }
     setDisableSubmit(false)
-
+    setDisableForm(false)
+    setDisabledSubtask(false)
     closeFunc()
   }
 
   const submitForm = () => {
+    setDisabledSubtask(true)
+    setDisableForm(true)
     setDisableSubmit(true)
     form.submit()
   }
 
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo)
+    setDisableForm(false)
     setDisableSubmit(false)
+    setDisabledSubtask(false)
   }
 
   return (
@@ -644,14 +660,19 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
           name="basic"
           //labelCol={{ span: 8 }}
           // wrapperCol={{ span: 16 }}
-          initialValues={{ remember: true, Layout: 'vertical' }}
+          initialValues={{
+            remember: true,
+            Layout: 'vertical',
+            ['TaskName']: taskName,
+          }}
           onFinish={onFinish}
           onFinishFailed={onFinishFailed}
           autoComplete="off"
+          disabled={disabledForm}
         >
           <Form.Item
             //label="Username"
-            name="task name"
+            name="TaskName"
             rules={[
               { required: true, message: '' },
               {
@@ -665,8 +686,9 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
             <Input
               showCount
               maxLength={100}
+              name="TaskName"
               placeholder="Task Name"
-              defaultValue={taskName}
+              //defaultValue={taskName}
               onBlur={(e) => {
                 const _taskName = e.target.value.replace(/^\n|\n$/g, '')
                 setTaskName(_taskName)
@@ -685,8 +707,10 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
                   type={PROJECT}
                   placeHolder={SELECT + ' ' + PROJECT}
                   initValue={projectValue}
+                  isProjectFixed={isProjectFixed}
                   disabled={projectValue ? true : false}
                   onChangeSelectorFunc={onChangeProject}
+                  projectStatus={ACTIVE}
                 />
               </Form.Item>
               <Form.Item name="assignee" style={{ width: '25%' }}>
@@ -718,6 +742,7 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
           <Form.Item name="description">
             <ReactQuill
               //ref={reactQuillRef}
+              placeholder="Type description"
               preserveWhitespace={true}
               modules={{
                 toolbar: [
@@ -762,13 +787,17 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
           </Form.Item>
           <br />
           <br />
-          <Form.Item name="attachment">
-            <Dragger {...props}>
-              <p className="ant-upload-text">Drag & drop here</p>
-            </Dragger>
-          </Form.Item>
+          {/*  <Form.Item name="attachment"> */}
+          <Dragger {...props}>
+            <p className="ant-upload-text">
+              Drag & drop here or <a>browse</a>
+            </p>
+          </Dragger>
+          {/* 
+          </Form.Item> */}
 
           <Space direction="vertical">
+            {/* <Form.Item name="subTasks"> */}
             <Space direction="vertical">
               <>
                 {subTasksComp.map((element) => element.content)}
@@ -784,6 +813,8 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
                 </Button>
               </>
             </Space>
+            {/* 
+            </Form.Item> */}
             <Space align="baseline" size={10}>
               <Tooltip placement="top" title="Priority">
                 <Form.Item name="priority">

@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { createAsyncThunk } from '@reduxjs/toolkit'
-import { GetUserByTypeAxios } from '../../../data/allUsersService'
+import { GetUserByTypeAxios } from '../../../data/services/allUsersService'
 import { Users } from '../../../data/database/Users'
 import { Params } from '../../../data/interface/task'
 import type { MenuProps } from 'antd'

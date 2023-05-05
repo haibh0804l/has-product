@@ -14,7 +14,7 @@ const { Paragraph } = Typography
 
 const _styleTask: React.CSSProperties = {
   margin: '0',
-  width: '30vw',
+  maxWidth: '30vw',
 }
 
 const _styleProject: React.CSSProperties = {
@@ -41,8 +41,8 @@ const ParagraphExample: React.FC<Name> = ({ type, name, task }) => {
   return (
     <>
       <div key={counter}>
-        <Space direction="horizontal">
-          {type ? (
+        {type ? (
+          <Space direction="horizontal">
             <Paragraph
               ellipsis={
                 ellipsis
@@ -57,17 +57,20 @@ const ParagraphExample: React.FC<Name> = ({ type, name, task }) => {
               style={_styleTask}
             >
               <Tooltip title={name}>{name}</Tooltip>
-              {type && task && task.Subtask && task.Subtask?.length ? (
-                <Tooltip title={task.Subtask?.length + ' subtask(s)'}>
-                  <FontAwesomeIcon
-                    icon={faDiagramProject}
-                    onClick={(e) => e.stopPropagation()}
-                    style={{ marginLeft: '10px' }}
-                  />
-                </Tooltip>
-              ) : null}
             </Paragraph>
-          ) : (
+
+            {type && task && task.Subtask && task.Subtask?.length ? (
+              <Tooltip title={task.Subtask?.length + ' subtask(s)'}>
+                <FontAwesomeIcon
+                  icon={faDiagramProject}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ marginLeft: '10px' }}
+                />
+              </Tooltip>
+            ) : null}
+          </Space>
+        ) : (
+          <Space direction="horizontal">
             <Paragraph
               ellipsis={
                 ellipsis
@@ -83,8 +86,8 @@ const ParagraphExample: React.FC<Name> = ({ type, name, task }) => {
             >
               <Tooltip title={name}>{name}</Tooltip>
             </Paragraph>
-          )}
-        </Space>
+          </Space>
+        )}
       </div>
       {expand === true && <a onClick={TypoClose}>Close</a>}
     </>

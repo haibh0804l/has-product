@@ -31,30 +31,48 @@ import { UploadProps, Modal } from 'antd'
 import { Tasks } from '../data/database/Tasks'
 import { Users } from '../data/database/Users'
 import type { Dayjs } from 'dayjs'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
+  NavigationType,
+  useLocation,
+  useMatches,
+  useNavigate,
+  useNavigationType,
+  useParams,
+} from 'react-router-dom'
+import {
+  faChevronLeft,
+  faEye,
+  faPaperclip,
   faPlus,
   faStar,
   faTabletButton,
+  faTrash,
   faUserCheck,
   faUserPlus,
 } from '@fortawesome/free-solid-svg-icons'
 import { CustomRoutes } from '../customRoutes'
 import ReactQuill, { Quill } from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
-import { GetTasksById, InsertTask, UpdateTask } from '../data/tasksService'
+import {
+  GetTasksById,
+  InsertTask,
+  UpdateTask,
+} from '../data/services/tasksService'
 import { InputTasks } from '../data/database/InputTasks'
 import _ from 'lodash'
 import {
   DEFAULT_STT,
+  DESCRIPTION,
   HIDE,
   READONLY,
   SHOW,
+  SUMMARY,
+  TYPE,
   UPDATE_FAIL,
   UPDATE_MODE,
 } from '../util/ConfigText'
 import CustomFloatButton from '../components/QuickCreate'
-import { GetUserByType } from '../data/allUsersService'
+import { GetUserByType } from '../data/services/allUsersService'
 import { getCookie } from 'typescript-cookie'
 import CustomDatePicker from '../components/CustomDatePicker'
 import { SubTaskCompProp, SubTaskProp } from '../data/interface/SubTaskProp'
@@ -71,18 +89,20 @@ import { useAppDispatch, useAppSelector } from '../redux/app/hook'
 import { fetchHistory } from '../redux/features/history/historySlice'
 import { AttachmentResponse } from '../data/database/Attachment'
 import axios from 'axios'
-import { RemoveAttachment } from '../data/attachmentService'
+import { RemoveAttachment } from '../data/services/attachmentService'
 import { CheckExtension } from '../util/Extension'
 import { SocketContext } from '../context'
-import { GetUsersByProject } from '../data/projectService'
+import { GetUsersByProject } from '../data/services/projectService'
 import { ProjectRequest } from '../data/database/Project'
-import { ShowUploadListInterface } from 'antd/es/upload/interface'
 import { TaskDetailsProps } from '../data/interface/ComponentsJson'
+
 import Auth from '../util/Auth'
+import CustomFileList from '../components/CustomFileList'
 
 interface TaskData {
   taskData?: Tasks
   openModal: boolean
+  name: string
 }
 
 interface ReactQuillDeltaOps {
@@ -92,16 +112,6 @@ interface ReactQuillDeltaOps {
 interface ReactQuillData {
   insert: string
 }
-
-/* const socket = io(process.env.REACT_APP_SOCKET!, {
-  reconnectionDelayMax: 10000,
-  auth: {
-    token: '123',
-  },
-  query: {
-    'my-key': 'my-value',
-  },
-}) */
 
 const { Header, Content } = Layout
 
@@ -129,7 +139,7 @@ function getUnique(array: any[], key: any) {
   )
 }
 
-const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
+const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
   const taskId = useParams()
   const navigate = useNavigate()
 
@@ -197,12 +207,18 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
   const socket = useContext(SocketContext)
   const [isConnected, setIsConnected] = useState(socket.connected)
   const userInfo: Users = JSON.parse(getCookie('userInfo')!)
-  //console.log('USER_INFO : ', userInfo)
   const dispatch = useAppDispatch()
   const [saved, setSaved] = useState(false)
   const [savedSummary, setSavedSummary] = useState(false)
   const [disableSummary, setDisableSummary] = useState(false)
   const [defaultTab, setDefaultTab] = useState('Description')
+  const [isSaved, setIsSaved] = useState(false)
+  const [descriptionPlaceholder, setDescriptionPlaceholder] = useState(
+    TYPE + ' ' + DESCRIPTION,
+  )
+  const [summaryPlaceholder, setSummaryPlaceholder] = useState(
+    TYPE + ' ' + SUMMARY,
+  )
 
   //component state
   const [isTaskNameReadOnly, setIsTasknameReadOnly] = useState(false)
@@ -220,6 +236,12 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
   const [isNotAuthorize, setIsNotAuthorize] = useState(false)
   const [canCreatedSubtask, setCanCreateSubtask] = useState(false)
   const [isSubtaskReadOnly, setIsSubtaskReadOnly] = useState(false)
+
+  /* const navType: NavigationType = useNavigationType()
+
+  useEffect(() => {
+    console.log(navType)
+  }, [navType]) */
 
   const customRequest = (options: any) => {
     const data = new FormData()
@@ -327,11 +349,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
     onDrop(e) {
       //console.log('Dropped files', e.dataTransfer.files)
     },
-    showUploadList: !isDisableDeleteFile
-      ? {}
-      : {
-          showRemoveIcon: false,
-        },
+    showUploadList: false,
   }
 
   const items: TabsProps['items'] = [
@@ -346,11 +364,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
       key: 'history',
       label: `History`,
       children: (
-        <HistoryComponent
-          collection={'Tasks'}
-          //documentId={'63b65aa9f1e6797000d19497'}
-          documentId={taskData._id!}
-        />
+        <HistoryComponent collection={'Tasks'} documentId={taskData._id!} />
       ),
     },
   ]
@@ -360,7 +374,6 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
     source: any,
     editor: any,
   ) => {
-    //setEditorValue(parse(editor.getHTML()) as string)
     setEditorValue(editor.getContents())
     setSaved(!saved)
   }
@@ -371,7 +384,6 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
     source: any,
     editor: any,
   ) => {
-    //setEditorValue(parse(editor.getHTML()) as string)
     setSummaryValue(editor.getContents())
     setSavedSummary(!savedSummary)
   }
@@ -383,7 +395,6 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
         Description: JSON.stringify(editorValue),
       }
       await UpdateTask('/api/task/', taskData._id!, inputTask)
-      //console.log('111111111111', editorValue)
     }
   }
 
@@ -395,7 +406,20 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
       }
       await UpdateTask('/api/task/', taskData._id!, inputTask)
     }
-    //console.log('222222222222222', summaryValue)
+  }
+
+  const onRemoveFile = async (value: string) => {
+    const response = await RemoveAttachment(value, taskData._id!)
+    if (response.ErrorMessage) {
+      message.error('Remove failed with error ' + response.ErrorMessage)
+      return false
+    } else {
+      message.success('Remove succeed')
+      setFileList(fileList.filter((element) => element.uid !== value))
+      setAttachmentIdList(
+        attachmentIdList.filter((element) => element !== value),
+      )
+    }
   }
 
   const itemSummary: TabsProps['items'] = [
@@ -405,6 +429,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
       children: (
         <>
           <ReactQuill
+            placeholder={descriptionPlaceholder}
             readOnly={isDescriptionReadOnly}
             preserveWhitespace={true}
             modules={
@@ -423,24 +448,30 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
                       ['image'],
                     ],
                   }
-                : { toolbar: [] }
+                : { toolbar: false }
             }
             value={editorValue}
-            onChange={onChangeEditor}
+            onChange={(content: any, delta: any, source: any, editor: any) => {
+              setIsSaved(true)
+              onChangeEditor(content, delta, source, editor)
+            }}
+            onKeyDown={() => {
+              if (!isDescriptionReadOnly) !saveBtn && setSaveBtn(true)
+            }}
             style={{
-              height: '260px',
-              overflow: 'inline',
+              height: '325px',
+              marginBottom: '50px',
+              //overflow: 'inline',
             }}
             onFocus={() => {
-              if (!isDescriptionReadOnly) setSaveBtn(true)
+              if (!isDescriptionReadOnly) !saveBtn && setSaveBtn(true)
             }}
           ></ReactQuill>
-
           {saveBtn === true && (
             <Button
               type="primary"
               onClick={SaveEditor}
-              style={{ marginLeft: '16px' }}
+              style={{ marginLeft: '16px', float: 'right' }}
             >
               Save
             </Button>
@@ -455,6 +486,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
       children: (
         <>
           <ReactQuill
+            placeholder={summaryPlaceholder}
             readOnly={isSummaryReadOnly}
             preserveWhitespace={true}
             modules={
@@ -473,16 +505,29 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
                       ['image'],
                     ],
                   }
-                : { toolbar: [] }
+                : { toolbar: false }
             }
             value={summaryValue}
             onChange={onChangeSummaryEditor}
             style={{
-              height: '260px',
-              overflow: 'inline',
+              /* height: '325px',
+              overflow: 'inline', */
+              height: '325px',
+              marginBottom: '50px',
+            }}
+            onKeyDown={() => {
+              if (!isSummaryReadOnly) {
+                if (!saveBtnSummary) {
+                  setSaveBtnSummary(true)
+                }
+              }
             }}
             onFocus={() => {
-              if (!isSummaryReadOnly) setSaveBtnSummary(true)
+              if (!isSummaryReadOnly) {
+                if (!saveBtnSummary) {
+                  setSaveBtnSummary(true)
+                }
+              }
             }}
           ></ReactQuill>
 
@@ -490,7 +535,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
             <Button
               type="primary"
               onClick={SaveSummaryEditor}
-              style={{ marginLeft: '16px' }}
+              style={{ marginLeft: '16px', float: 'right' }}
             >
               Save
             </Button>
@@ -520,9 +565,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
   const BackToMainTask = (taskId: string) => {
     navigate(CustomRoutes.TaskDetails.path + '/' + taskId, {
       state: {
-        search: '/' + taskData._id, // query string
-        // location state
-        //parentTask: parentTask,
+        search: '/' + taskData._id,
       },
     })
     navigate(0)
@@ -540,6 +583,10 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
       '/api/task/getonetask/',
       taskId.id as string,
     )
+    if (data.length === 0) {
+      navigate(CustomRoutes.NotFound.path, { replace: true })
+      return
+    }
     setTaskData(data[0])
     if (
       data[0].Status.toLowerCase() === 'Completed'.toLowerCase() ||
@@ -582,31 +629,65 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
         _stringTotal += element.insert
       }
       if (!_stringTotal.replace(/\s/g, '').length) {
-        /* console.log(
-          'WTF only space ' + JSON.stringify(_stringTotal.replace(/\s/g, '')),
-        ) */
-        if (userInfo.Role!.Level >= 3) {
-          setDefaultTab('Description')
-          setDisableSummary(true)
+        console.log('Length 0')
+        //length = 0
+        if (userInfo._id === data[0].Assignee[0]._id) {
+          if (data[0].Assignee[0]._id === data[0].Reporter._id) {
+            setDefaultTab('Description')
+          } else {
+            setDefaultTab('Description')
+          }
+          //setDisableSummary(true)
         } else {
-          setDefaultTab('Summarry')
-          setDisableSummary(false)
+          if (userInfo._id === data[0].Reporter._id) {
+            if (data[0].Assignee[0]._id === data[0].Reporter._id) {
+              setDefaultTab('Description')
+            } else {
+              setDefaultTab('Description')
+              setDisableSummary(true)
+            }
+          }
         }
       } else {
-        if (userInfo.Role!.Level >= 3) {
-          setDefaultTab('Summarry')
-          setDisableSummary(false)
+        console.log('Length > 0')
+        //length > 0
+        if (userInfo._id === data[0].Assignee[0]._id) {
+          if (data[0].Assignee[0]._id === data[0].Reporter._id) {
+            setDefaultTab('Description')
+          } else {
+            setDefaultTab('Description')
+          }
+          //setDisableSummary(true)
         } else {
-          setDefaultTab('Description')
+          if (userInfo._id === data[0].Reporter._id) {
+            if (data[0].Assignee[0]._id === data[0].Reporter._id) {
+              setDefaultTab('Summarry')
+            } else {
+              setDefaultTab('Summarry')
+              setDisableSummary(false)
+            }
+          }
         }
       }
     } catch (e) {
-      if (userInfo.Role!.Level >= 3) {
-        setDefaultTab('Description')
-        setDisableSummary(true)
+      console.log(e)
+      //error : length = 0
+      if (userInfo._id === data[0].Assignee[0]._id) {
+        if (data[0].Assignee[0]._id === data[0].Reporter._id) {
+          setDefaultTab('Description')
+        } else {
+          setDefaultTab('Description')
+        }
+        //setDisableSummary(true)
       } else {
-        setDefaultTab('Description')
-        setDisableSummary(false)
+        if (userInfo._id === data[0].Reporter._id) {
+          if (data[0].Assignee[0]._id === data[0].Reporter._id) {
+            setDefaultTab('Description')
+          } else {
+            setDefaultTab('Description')
+            setDisableSummary(true)
+          }
+        }
       }
     }
     //console.log('My report ' + data[0].SummaryReport!)
@@ -671,7 +752,13 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
 
     setIsTasknameReadOnly(props.isTaskNameReadOnly)
     setIsDescriptionReadOnly(props.isDescriptionReadOnly)
+    if (props.isDescriptionReadOnly) {
+      setDescriptionPlaceholder('')
+    }
     setSummaryReadOnly(props.isSummaryReadOnly)
+    if (props.isSummaryReadOnly) {
+      setSummaryPlaceholder('')
+    }
     setIsDateReadOnly(props.isDateReadOnly)
     setStatusReadOnly(props.isStatusReadOnly)
     setIsPriorityReadOnly(props.isPriorityReadOnly)
@@ -749,6 +836,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
   }, [fetchData])
 
   useEffect(() => {
+    document.title = name
     socket.on('connection', () => {
       setIsConnected(true)
     })
@@ -763,20 +851,22 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
     }
   }, [])
 
-  useEffect(() => {
+  /* useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      const inputTask: InputTasks = {
-        Description: JSON.stringify(editorValue),
-      }
-      if (taskData._id && !isDescriptionReadOnly) {
-        UpdateTask('/api/task/', taskData._id!, inputTask).then((r) => {})
+      if (isSaved) {
+        const inputTask: InputTasks = {
+          Description: JSON.stringify(editorValue),
+        }
+        if (taskData._id && !isDescriptionReadOnly) {
+          UpdateTask('/api/task/', taskData._id!, inputTask).then((r) => {})
+        }
       }
     }, 1000)
 
     return () => clearTimeout(delayDebounceFn)
-  }, [saved])
+  }, [saved]) */
 
-  useEffect(() => {
+  /* useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       const inputTask: InputTasks = {
         SummaryReport: JSON.stringify(summaryValue),
@@ -787,7 +877,9 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
     }, 1000)
 
     return () => clearTimeout(delayDebounceFn)
-  }, [savedSummary])
+  }, [savedSummary]) */
+
+  // co
 
   const onOkEvent = async (date: null | (Dayjs | null)) => {
     const dateStr = date?.toString()
@@ -889,6 +981,11 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
       if (getCookie('projectId')) {
         _task.Project = { _id: getCookie('projectId') } as ProjectRequest
       }
+
+      if (taskData.Project) {
+        _task.Project = { _id: taskData.Project._id } as ProjectRequest
+      }
+
       _task.ParentTask = taskId.id as string
       //subTask.push(_task)
       const subTaskFilter = subTask.filter((e) => e._id === _task._id)
@@ -993,10 +1090,11 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
             <Layout>
               <Header style={{ height: '20%', marginLeft: '16px' }}>
                 <Space direction="vertical" style={{ width: '100%' }}>
-                  <ModalBreadCrumb />
                   {haveParentTask === true && (
                     <Button
+                      //style={{ padding: '0px' }}
                       type="primary"
+                      //icon={<FontAwesomeIcon icon={faChevronLeft} />}
                       onClick={() => BackToMainTask(parentTask)}
                     >
                       Back to main tasks
@@ -1070,8 +1168,8 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
                     )}
                     <Col
                       className="gutter-row"
-                      span={4}
-                      style={{ flex: 'revert', marginRight: '10px' }}
+                      flex="revert"
+                      style={{ marginRight: '10px' }}
                     >
                       <CustomDatePicker
                         disabled={isDateReadOnly}
@@ -1093,6 +1191,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
                         id={'details'}
                         task={taskData}
                         disabled={isPriorityReadOnly}
+                        mode={UPDATE_MODE}
                       />
                     </Col>
                     {getUsers === false ? (
@@ -1185,7 +1284,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
                             overflow: 'hidden',
                             position: 'relative',
                             //maxHeight: '450px',
-                            height: '100%',
+                            height: 'max-content',
                           }}
                         />
 
@@ -1194,7 +1293,6 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
                         {assigneeData.length !== 0 ? (
                           <Space direction="vertical" style={{ width: '100%' }}>
                             {subTasksComp.map((element) => element.content)}
-
                             {canCreatedSubtask && (
                               <Button
                                 type="dashed"
@@ -1207,13 +1305,20 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
                                 Subtask
                               </Button>
                             )}
+                            <CustomFileList
+                              files={fileList}
+                              onRemove={onRemoveFile}
+                              isDeleteDisabled={isDisableDeleteFile}
+                            />
                           </Space>
                         ) : (
                           <Spin />
                         )}
                       </div>
                       <Dragger {...props}>
-                        <p className="ant-upload-text">Drag & drop here</p>
+                        <p className="ant-upload-text">
+                          Drag & drop here or <a>browse</a>
+                        </p>
                       </Dragger>
                     </Space>
                   </Col>
@@ -1227,7 +1332,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal }) => {
                         borderWidth: 'thin',
                         borderRadius: '4px',
                         border: '1px solid #9CA3AF',
-                        minHeight: '230px',
+                        minHeight: '325px',
                         padding: '1%',
                         overflow: 'hidden',
                         position: 'relative',

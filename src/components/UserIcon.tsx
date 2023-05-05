@@ -29,9 +29,13 @@ const UserIcon: React.FC<User> = ({
     setGap(index < GapList.length - 1 ? GapList[index + 1] : GapList[0])
   }
 
-  const firstNameLetter = userInfo?.FirstName?.substring(0, 1).toUpperCase()
-  const lastNameLetter = userInfo?.LastName?.substring(0, 1).toUpperCase()
-  user = lastNameLetter + '' + firstNameLetter 
+  const firstNameLetter = userInfo?.FirstName?.trim()
+    .substring(0, 1)
+    .toUpperCase()
+  const lastNameLetter = userInfo?.LastName?.trim()
+    .substring(0, 1)
+    .toUpperCase()
+  user = lastNameLetter + '' + firstNameLetter
   return (
     <>
       <Tooltip title={tooltipName} placement="top">

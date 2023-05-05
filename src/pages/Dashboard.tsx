@@ -11,10 +11,12 @@ import TrustRanking from '../components/dashboard/TrustRanking'
 import { useAppDispatch, useAppSelector } from '../redux/app/hook'
 import { fetchTasksReporter } from '../redux/features/tasks/reporterTaskSlice'
 import { Params } from '../data/interface/task'
+import { CustomRoutes } from '../customRoutes'
+import { PageName } from '../data/interface/PageName'
 
 const { Content } = Layout
 
-const Dashboard: React.FC = () => {
+const Dashboard: React.FC<PageName> = ({ name }) => {
   const [showTrustScore, setShowTrustScore] = useState(false)
   const task = useAppSelector((state) => state.reporterTasks)
   const userInfo: Users = JSON.parse(getCookie('userInfo')!)
@@ -46,11 +48,14 @@ const Dashboard: React.FC = () => {
     }
   }, [task.loading, task.tasks.length])
 
+  useEffect(() => {
+    document.title = name
+  }, [])
   return (
     <>
       <Content className="inner-content">
         <Space direction="vertical" style={{ width: '100%' }}>
-          <div style={{ float: 'right', width: '10%' }}>
+          <div style={{ float: 'right', width: '7%' }}>
             <Button type="primary">
               <Space direction="horizontal">
                 <FontAwesomeIcon icon={faRefresh} />
@@ -76,14 +81,14 @@ const Dashboard: React.FC = () => {
               <Col span={12}>
                 <ScoreRanking
                   reloadCount={reload}
-                  defaultDep={userInfo.Department!}
+                  defaultDep={userInfo.Group![0].Name!}
                 />
               </Col>
             )}
             <Col span={12}>
               <PersonalScore
                 reloadCount={reload}
-                department={userInfo.Department!}
+                department={userInfo.Group![0].Name!}
               />
             </Col>
           </Row>

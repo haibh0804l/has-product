@@ -10,5 +10,7 @@ export const CustomRoutes = {
   NotFound: { path: '/notfound', name: 'Home' },
   About: { path: '/about', name: 'Home' },
   Setting: { path: '/setting', name: 'Setting' },
-  TaskDetails: { path: '/taskdetails', name: 'TaskDetails' },
+  TaskDetails: { path: '/taskdetails', name: 'Task Details' },
+  NotFoundPage: { path: '/notfound', name: 'Not Found' },
+  Project: { path: '/project', name: 'Project' },
 }

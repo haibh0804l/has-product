@@ -4,7 +4,7 @@ import {
   ScoreRankingRequest,
   ScoreRankingResponse,
 } from '../../../data/database/Report'
-import { GetScoreRanking } from '../../../data/reportService'
+import { GetScoreRanking } from '../../../data/services/reportService'
 
 type InitialState = {
   loading: boolean

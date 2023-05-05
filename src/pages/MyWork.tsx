@@ -6,14 +6,15 @@ import '../assets/css/index.css'
 import { Tasks } from '../data/database/Tasks'
 import CustomFloatButton from '../components/QuickCreate'
 import { getCookie } from 'typescript-cookie'
+import { CustomRoutes } from '../customRoutes'
+import { PageName } from '../data/interface/PageName'
 
 const { Content } = Layout
 
-const MyWork: React.FC = () => {
-  const _id = getCookie('user_id') as string
-  const [todayData, setTodayData] = useState<Tasks[]>([])
-  const [otherData, setOtherData] = useState<Tasks[]>([])
-
+const MyWork: React.FC<PageName> = ({ name }) => {
+  useEffect(() => {
+    document.title = name
+  }, [])
   return (
     <>
       <CustomFloatButton />
@@ -24,12 +25,7 @@ const MyWork: React.FC = () => {
             minHeight: 360,
           }}
         >
-          <CustomTab
-            assigneeTask={todayData}
-            assigneeTaskNum={todayData.length}
-            otherTask={otherData}
-            otherTaskNum={otherData.length}
-          />
+          <CustomTab />
         </div>
       </Content>
     </>

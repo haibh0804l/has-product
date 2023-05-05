@@ -8,6 +8,8 @@ export interface ProjectRepsonse {
   Reporter?: any[]
   Manager?: any[]
   Tasks?: Tasks[]
+  Customer?: any
+  Description?: string
   __v?: number
 }
 
@@ -19,6 +21,21 @@ export interface ProjectRequest {
   manager?: any[]
   creator?: string
   creatorName?: string
-  createDate: Date
+  createDate?: Date
+  userId?: string
+  userName?: string
   __v?: number
+  status: string
+  customer?: string
+  description?: string
+}
+
+export interface Summary {
+  Count: number
+  Status: string
+}
+
+export interface TaskSummaryResponse {
+  TotalTask: number
+  Summary: Summary[]
 }

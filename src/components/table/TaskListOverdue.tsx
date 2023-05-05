@@ -24,32 +24,18 @@ import ParagraphExample from '../ParagraphExample'
 import { Tasks } from '../../data/database/Tasks'
 import DateFormatter from '../../util/DateFormatter'
 import IconGroup from '../IconGroup'
-import TaskDetails from '../../pages/TaskDetails'
 import { CustomRoutes } from '../../customRoutes'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { Link } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getCookie } from 'typescript-cookie'
-import { Role } from '../../data/database/Role'
 import { Status } from '../../data/interface/Status'
 import { useAppDispatch, useAppSelector } from '../../redux/app/hook'
-import { Params } from '../../data/interface/task'
-import { fetchTasksReporter } from '../../redux/features/tasks/reporterTaskSlice'
 import { reportToMeTaskChange } from '../../redux/features/reportToMeTask/reportToMeTaskSlice'
-import {
-  IGNORE_STT_DEFAULT,
-  REPORTER,
-  SEARCH,
-  UPDATE_MODE,
-} from '../../util/ConfigText'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faSearch } from '@fortawesome/free-solid-svg-icons'
-import { ToLowerCaseNonAccentVietnamese } from '../../util/FormatText'
+import { REPORTER, revertAll, UPDATE_MODE } from '../../util/ConfigText'
 import GetStatusIgnoreList from '../../util/StatusList'
-import { status } from '../../data/menuProps'
 import {
-  addAssignee,
   addManager,
   addReporter,
+  addTabs,
   fetchFilterResult,
 } from '../../redux/features/filter/filterSlice'
 import { FilterRequestWithType } from '../../data/interface/FilterInterface'
@@ -84,8 +70,7 @@ const TaskListOverDue: React.FC<InputData> = ({
   showMore,
   increment,
 }) => {
-  const [isPending, startTransition] = useTransition()
-
+  const tab = useParams()
   const navigate = useNavigate()
   const location = useLocation()
   const refresh = location.state
@@ -458,8 +443,10 @@ const TaskListOverDue: React.FC<InputData> = ({
   }
 
   useEffect(() => {
+    dispatch(revertAll())
     dispatch(addManager([]))
     dispatch(addReporter([getCookie('user_id')!]))
+    dispatch(addTabs('2'))
     try {
       const s = refresh.refresh
       if (refresh.refresh === true) {
@@ -493,6 +480,7 @@ const TaskListOverDue: React.FC<InputData> = ({
             dispatch(reportToMeTaskChange(filterInit.filterResponse.length))
           }
         } else {
+          dispatch(reportToMeTaskChange(0))
           setInput([])
           ReorderTask([])
           setLoading(false)
@@ -503,7 +491,7 @@ const TaskListOverDue: React.FC<InputData> = ({
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      if (filterInit.tabs === '2') {
+      if (tab.id && tab.id === '2') {
         setLoading(true)
         //check for any change here
         const filterReq: FilterRequestWithType = {
@@ -511,6 +499,16 @@ const TaskListOverDue: React.FC<InputData> = ({
           type: REPORTER,
         }
         dispatch(fetchFilterResult(filterReq))
+      } else {
+        if (filterInit.tabs === '2') {
+          setLoading(true)
+          //check for any change here
+          const filterReq: FilterRequestWithType = {
+            filter: filterInit.filter,
+            type: REPORTER,
+          }
+          dispatch(fetchFilterResult(filterReq))
+        }
       }
     }, 200)
 
@@ -520,7 +518,7 @@ const TaskListOverDue: React.FC<InputData> = ({
   const handleMenuClickStatus: MenuProps['onClick'] = async (e) => {
     //console.log('Hello')
     //await dispatch(fetchTasksReporter(params))
-    setLoading(true)
+    //setLoading(true)
   }
 
   let data: DataType[] = []

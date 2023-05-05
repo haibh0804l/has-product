@@ -21,13 +21,13 @@ import {
   UPDATE_MODE,
 } from '../util/ConfigText'
 import { InputTasks } from '../data/database/InputTasks'
-import { UpdateTask } from '../data/tasksService'
+import { UpdateTask } from '../data/services/tasksService'
 import '../assets/css/index.css'
 import { Status } from '../data/interface/Status'
 import GetStatusIgnoreList from '../util/StatusList'
 import { getCookie } from 'typescript-cookie'
-import { GetUserByType } from '../data/allUsersService'
-import { GetUsersByProject } from '../data/projectService'
+import { GetUserByType } from '../data/services/allUsersService'
+import { GetUsersByProject } from '../data/services/projectService'
 
 const UserListComp = React.lazy(() => import('./UserListComp'))
 type SubTaskInput = {
@@ -72,7 +72,13 @@ const SubTask: React.FC<SubTaskInput> = ({
   const [statusIgnoreList, setStatusIgnoreList] = useState<Status[]>([])
   const [assigneeDataInner, setAssigneeDataInner] = useState<Users[]>([])
   const [reporterDataInner, setReporterDataInner] = useState<Users[]>([])
-  //const [disabled, setDisabled] = useState(false)
+  const [disabledSubtask, setDisabledSubtask] = useState(
+    disabled ? disabled : false,
+  )
+
+  useEffect(() => {
+    setDisabledSubtask(disabled ? disabled : false)
+  }, [disabled])
 
   const fetchData = useCallback(async () => {
     /* if (subTask.Assignee.length > 0) {
@@ -247,12 +253,16 @@ const SubTask: React.FC<SubTaskInput> = ({
           //align="baseline"
         >
           <Form
-            disabled={disabled}
+            disabled={disabledSubtask}
             form={form}
             name="basic"
             labelCol={{ span: 8 }}
             wrapperCol={{ span: 16 }}
-            initialValues={{ remember: true, Layout: 'vertical' }}
+            initialValues={{
+              remember: true,
+              Layout: 'vertical',
+              ['TaskName']: subTask.TaskName,
+            }}
             onFinish={(e) => {
               if (onFinish) onFinish(e)
               setShowEditDetail(true)
@@ -272,7 +282,6 @@ const SubTask: React.FC<SubTaskInput> = ({
             >
               <Form.Item name="_id"></Form.Item>
               <Form.Item
-                name="Status"
                 style={{
                   marginBottom: '0px',
                 }}
@@ -312,13 +321,15 @@ const SubTask: React.FC<SubTaskInput> = ({
                 {editTaskName === true ? (
                   <Input
                     showCount
+                    name="TaskName"
                     maxLength={100}
                     style={{ borderColor: 'transparent', width: '100%' }}
                     autoFocus={autoFocus}
-                    defaultValue={subTask.TaskName}
-                    value={subTask.TaskName}
+                    //defaultValue={subTask.TaskName}
+                    //value={subTask.TaskName}
                     onChange={(e) => {
-                      if (e.target.value !== '') {
+                      form.setFieldsValue({ TaskName: e.target.value })
+                      if (e.target.value.trim() !== '') {
                         setHideSubmitBtn(false)
                         setSubTask({
                           ...subTask,
@@ -333,6 +344,7 @@ const SubTask: React.FC<SubTaskInput> = ({
                       }
                     }}
                     onBlur={() => {
+                      form.setFieldsValue({ TaskName: subTask.TaskName })
                       if (subTask.TaskName.trim() !== '') {
                         setEditTaskName(false)
                         setSubTask({
@@ -348,10 +360,10 @@ const SubTask: React.FC<SubTaskInput> = ({
                     placeholder="Task name"
                   />
                 ) : disabled ? (
-                  <p>{subTask.TaskName}</p>
+                  <p>{form.getFieldValue('TaskName')}</p>
                 ) : (
-                  <p onClick={() => setEditTaskName(true)}>
-                    {subTask.TaskName}
+                  <p className="456" onClick={() => setEditTaskName(true)}>
+                    {form.getFieldValue('TaskName')}
                   </p>
                 )}
               </Form.Item>
@@ -374,7 +386,7 @@ const SubTask: React.FC<SubTaskInput> = ({
               >
                 <Suspense fallback={<div>Loading...</div>}>
                   <UserListComp
-                    disabled={disabled}
+                    disabled={disabledSubtask}
                     userData={assigneeDataInner}
                     maxCount={2}
                     icon={
@@ -404,7 +416,7 @@ const SubTask: React.FC<SubTaskInput> = ({
               >
                 <Suspense fallback={<div>Loading...</div>}>
                   <UserListComp
-                    disabled={disabled}
+                    disabled={disabledSubtask}
                     userData={reporterDataInner}
                     maxCount={3}
                     icon={
@@ -432,7 +444,7 @@ const SubTask: React.FC<SubTaskInput> = ({
                 }}
               >
                 <DropdownProps
-                  disabled={disabled}
+                  disabled={disabledSubtask}
                   type={'Priority'}
                   text={tasks.Priority ? tasks.Priority : ''}
                   id={'SubTask'}
@@ -442,30 +454,32 @@ const SubTask: React.FC<SubTaskInput> = ({
                   task={tasks}
                 />
               </Form.Item>
-
-              <CustomDatePicker
-                dueDateInput={subTask.DueDate ? subTask.DueDate.toString() : ''}
-                //onChangeValue={OnChangeDateTime}
-                mode={mode}
-                onOkEvent={onOkEvent}
-              />
               <Form.Item
                 //label="Username"
-                name="ButtonSubmit"
+                name="DueDate"
                 style={{
                   marginBottom: '0px',
                 }}
               >
-                {hideSubmitBtn === false && (
-                  <Button
-                    type="primary"
-                    //htmlType="submit"
-                    onClick={buttonOnClick}
-                  >
-                    Save
-                  </Button>
-                )}
+                <CustomDatePicker
+                  dueDateInput={
+                    subTask.DueDate ? subTask.DueDate.toString() : ''
+                  }
+                  //onChangeValue={OnChangeDateTime}
+                  mode={mode}
+                  onOkEvent={onOkEvent}
+                />
               </Form.Item>
+
+              {hideSubmitBtn === false && (
+                <Button
+                  type="primary"
+                  //htmlType="submit"
+                  onClick={buttonOnClick}
+                >
+                  Save
+                </Button>
+              )}
             </Space>
           </Form>
           {errorMsg === true ? <h2>Error</h2> : null}

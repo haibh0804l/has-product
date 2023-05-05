@@ -159,6 +159,7 @@ const Comments: React.FC<CommnentsInput> = ({ taskId, disabled }) => {
         style={{
           width: '100%',
           minHeight: '380px',
+          maxHeight: '390px',
           overflowY: 'scroll',
           overflowX: 'hidden',
         }}
@@ -175,13 +176,10 @@ const Comments: React.FC<CommnentsInput> = ({ taskId, disabled }) => {
         ) : (
           <Spin />
         )}
+
         <div ref={refForScroll} />
       </Space>
-      <div
-        style={{
-          height: 'auto',
-        }}
-      >
+      <div>
         {!disabled ? (
           <>
             <Input

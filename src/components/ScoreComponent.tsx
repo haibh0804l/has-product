@@ -18,7 +18,7 @@ import { Tasks } from '../data/database/Tasks'
 import UserIcon from './UserIcon'
 import '../assets/css/layout.css'
 import { InputTasks } from '../data/database/InputTasks'
-import { UpdateTask } from '../data/tasksService'
+import { UpdateTask } from '../data/services/tasksService'
 import {
   BAD_SCORE_TEXT,
   BIG_SCORE_TEXT,
@@ -51,7 +51,7 @@ const ScoreComp: React.FC<ScoreCompParam> = ({
   const score = defaultScore ? defaultScore : 0
   const [inputValue, setInputValue] = useState(score)
   const [commentValue, setCommentValue] = useState(
-    task.ScoreComment ? task.ScoreComment : 'Good job',
+    task.ScoreComment ? task.ScoreComment : 'Every effort counts',
   )
   const [err, setErr] = useState('')
   const [loading, setLoading] = useState(false)

@@ -20,10 +20,13 @@ import customParseFormat from 'dayjs/plugin/customParseFormat'
 import type { Dayjs } from 'dayjs'
 import { useAppDispatch, useAppSelector } from '../../redux/app/hook'
 import { DateFilter, FilterRequest } from '../../data/interface/FilterInterface'
-import filterSlice, {
+import {
+  addAssignee,
   addClosedDate,
   addDueDate,
-  fetchFilterResult,
+  addManager,
+  addReporter,
+  addTabs,
 } from '../../redux/features/filter/filterSlice'
 import PrioritySelector from '../selector/PrioritySelector'
 import {
@@ -32,6 +35,7 @@ import {
 } from '../../redux/features/userInfo/userValueSlice'
 import { RangePickerProps } from 'antd/es/date-picker'
 import RemoteSelectorProject from '../selector/RemoteSelectorProject'
+import { getCookie } from 'typescript-cookie'
 
 dayjs.extend(customParseFormat)
 
@@ -74,13 +78,22 @@ const rangePresets: {
 ]
 
 const Comp: React.FC<FilterOptionInput> = ({ tabs }) => {
-  const initValue = useAppSelector((state) => state.userValue)
+  const initValue = useAppSelector((state) => state.userValue.filtered)
+  const initFilter = useAppSelector((state) => state.filter)
   const dispatch = useAppDispatch()
   const { RangePicker } = DatePicker
 
   const onClearFilter = () => {
     //reset to init state
     dispatch(revertAll())
+    dispatch(addTabs(tabs))
+    if (tabs === '1') {
+      dispatch(addAssignee([sessionStorage.getItem('user_id')!]))
+    } else if (tabs === '2') {
+      dispatch(addReporter([sessionStorage.getItem('user_id')!]))
+    } else {
+      dispatch(addManager([sessionStorage.getItem('user_id')!]))
+    }
   }
 
   const onRangeDueDateChange = (
@@ -88,13 +101,15 @@ const Comp: React.FC<FilterOptionInput> = ({ tabs }) => {
     dateString: [string, string] | string,
   ) => {
     if (value) {
-      let value0 = new Date(dateString[0] + 'T00:00:00Z')
+      console.log(value)
+      let value0 = value[0]?.toDate()
 
-      let value1 = new Date(dateString[1] + 'T23:59:59Z')
+      let value1 = value[1]?.toDate()
       const dateFilter: DateFilter = {
         fromDate: value0,
         toDate: value1,
       }
+
       dispatch(addDueDateValue(value))
       dispatch(addDueDate(dateFilter))
     } else {
@@ -102,7 +117,7 @@ const Comp: React.FC<FilterOptionInput> = ({ tabs }) => {
         fromDate: undefined,
         toDate: undefined,
       }
-      dispatch(addDueDateValue(value))
+      dispatch(addDueDateValue(value as any))
       dispatch(addDueDate(dateFilter))
     }
   }
@@ -112,13 +127,14 @@ const Comp: React.FC<FilterOptionInput> = ({ tabs }) => {
     dateString: [string, string] | string,
   ) => {
     if (value) {
-      let value0 = new Date(dateString[0] + 'T00:00:00Z')
+      let value0 = value[0]?.toDate()
 
-      let value1 = new Date(dateString[1] + 'T23:59:59Z')
+      let value1 = value[1]?.toDate()
       const dateFilter: DateFilter = {
         fromDate: value0,
         toDate: value1,
       }
+
       dispatch(addCloseDateValue(value))
       dispatch(addClosedDate(dateFilter))
     } else {
@@ -126,7 +142,7 @@ const Comp: React.FC<FilterOptionInput> = ({ tabs }) => {
         fromDate: undefined,
         toDate: undefined,
       }
-      dispatch(addCloseDateValue(value))
+      dispatch(addCloseDateValue(value as any))
       dispatch(addClosedDate(dateFilter))
     }
   }
@@ -234,6 +250,7 @@ const FilterOptions: React.FC<FilterOptionInput> = ({ tabs }) => {
       title="Filter"
       content={<Comp tabs={tabs} />}
       trigger="click"
+      onOpenChange={() => setOpenFilter(!openFilter)}
     >
       {!openFilter ? (
         <FontAwesomeIcon

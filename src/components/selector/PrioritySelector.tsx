@@ -47,11 +47,17 @@ const PrioritySelector: React.FC<StatusInput> = ({ onChange, initValue }) => {
 
   const selectProps: SelectProps = {
     mode: 'multiple',
+    showSearch: true,
+    allowClear: true,
     style: { width: '100%' },
     value,
     options,
     onChange: (newValue: string[]) => {
       setValue(newValue)
+      setChangeValue(!changeValue)
+    },
+    onClear: () => {
+      setValue([])
       setChangeValue(!changeValue)
     },
     placeholder: 'Select priority',

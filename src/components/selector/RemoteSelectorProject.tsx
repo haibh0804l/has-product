@@ -2,20 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Select, Spin } from 'antd'
 import type { SelectProps } from 'antd/es/select'
 import debounce from 'lodash/debounce'
-import { useAppDispatch, useAppSelector } from '../../redux/app/hook'
-import { ASSIGNEE, MANAGER, REPORTER } from '../../util/ConfigText'
-import {
-  addAssignee,
-  addProject,
-  addReporter,
-} from '../../redux/features/filter/filterSlice'
+import { useAppDispatch } from '../../redux/app/hook'
+import { addProject } from '../../redux/features/filter/filterSlice'
 import { SelectorValue } from '../../data/interface/SelectorValue'
-import {
-  addAssigneeValue,
-  addProjectValue,
-  addReporterValue,
-} from '../../redux/features/userInfo/userValueSlice'
-import { GetProject } from '../../data/projectService'
+import { addProjectValue } from '../../redux/features/userInfo/userValueSlice'
+import { GetProject } from '../../data/services/projectService'
 import { getCookie } from 'typescript-cookie'
 import { ProjectRepsonse } from '../../data/database/Project'
 import { ToLowerCaseNonAccentVietnamese } from '../../util/FormatText'
@@ -74,7 +65,9 @@ function DebounceSelect<
     <Select
       labelInValue
       filterOption={false}
-      onFocus={() => debounceFetcher('')}
+      onFocus={() => {
+        debounceFetcher('')
+      }}
       onSearch={debounceFetcher}
       notFoundContent={fetching ? <Spin size="small" /> : null}
       {...props}

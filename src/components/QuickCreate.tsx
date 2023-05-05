@@ -5,6 +5,7 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import '../assets/css/index.css'
 import TaskCreation from './TaskCreation'
 import { removeCookie } from 'typescript-cookie'
+import ObjectID from 'bson-objectid'
 
 const CustomFloatButton: React.FC = () => {
   const [open, setOpen] = useState(false)
@@ -25,6 +26,7 @@ const CustomFloatButton: React.FC = () => {
         openModal={open}
         closeFunc={() => setOpen(false)}
         isProjectFixed={false}
+        id={ObjectID(new Date().getTime()).toHexString()}
       />
     </>
   )

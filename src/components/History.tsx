@@ -1,4 +1,4 @@
-import { Space, Typography } from 'antd'
+import { Col, Row, Space, Typography } from 'antd'
 import React, { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../redux/app/hook'
 import { fetchHistory } from '../redux/features/history/historySlice'
@@ -19,12 +19,12 @@ const { Text } = Typography
 
 const Comp: React.FC<CompInput> = ({ action, createdDate }) => {
   return (
-    <div>
-      <p style={{ float: 'left', width: '80%' }}>{action}</p>
-      <p style={{ float: 'right', width: 'auto' }}>
+    <Row gutter={10}>
+      <Col flex={'auto'}>{action}</Col>
+      <Col>
         <DateFormatter dateString={createdDate} />
-      </p>
-    </div>
+      </Col>
+    </Row>
   )
 }
 
@@ -50,7 +50,7 @@ const HistoryComponent: React.FC<HistoryComponentInput> = ({
           direction="vertical"
           style={{
             width: '100%',
-            height: '380px',
+            height: '430px',
             overflowY: 'scroll',
             overflowX: 'hidden',
           }}
