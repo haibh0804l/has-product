@@ -20,6 +20,8 @@ import {
 } from '../redux/features/filter/filterSlice'
 import { useAppDispatch, useAppSelector } from '../redux/app/hook'
 import { PageName } from '../data/interface/PageName'
+import { fetchStatus } from '../redux/features/categories/statusSlice'
+import { fetchPriority } from '../redux/features/categories/prioritySlice'
 
 const { Sider } = Layout
 
@@ -33,7 +35,7 @@ const HomePage: React.FC<PageName> = ({ name }) => {
 
   useEffect(() => {
     document.title = name
-    sessionStorage.setItem('location', JSON.stringify(location))
+    localStorage.setItem('location', JSON.stringify(location))
     if (filterInit.tabs === '1') {
       dispatch(addAssignee([getCookie('user_id')!]))
     } else if (filterInit.tabs === '2') {
@@ -42,19 +44,19 @@ const HomePage: React.FC<PageName> = ({ name }) => {
       dispatch(addManager([getCookie('user_id')!]))
     }
 
-    const reloadCount = sessionStorage.getItem('reloadCount')
+    const reloadCount = localStorage.getItem('reloadCount')
     if (reloadCount) {
       if (Number(reloadCount) < 2) {
-        sessionStorage.setItem('reloadCount', String(Number(reloadCount) + 1))
+        localStorage.setItem('reloadCount', String(Number(reloadCount) + 1))
         window.location.reload()
       } else {
         setIsReload(false)
-        //sessionStorage.removeItem('reloadCount')
+        //localStorage.removeItem('reloadCount')
       }
     } else {
       navigate(0)
       setIsReload(false)
-      sessionStorage.setItem('reloadCount', String(Number(reloadCount) + 1))
+      localStorage.setItem('reloadCount', String(Number(reloadCount) + 1))
     }
   }, [])
 

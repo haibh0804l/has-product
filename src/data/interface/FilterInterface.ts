@@ -17,6 +17,8 @@ export interface FilterInterface {
   closeDate?: DateFilter
   completed?: boolean
   closedProject?: boolean
+  statusCategory?: string[]
+  priorityCategory?: string[]
 }
 
 export interface FilterRequest {
@@ -28,6 +30,7 @@ export interface FilterRequestWithType {
 }
 
 export interface FilterResponse {
+  CustomerName?: string
   ProjectId?: string
   ProjectName?: string
   Status?: string

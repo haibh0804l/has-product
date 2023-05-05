@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Space, Tooltip, Typography } from 'antd'
 import '../assets/css/paragraph.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -8,6 +8,9 @@ interface Name {
   type?: string
   name?: string
   task: Tasks
+  ref?: React.Ref<HTMLElement> | undefined
+  userType?: string
+  read?: boolean
 }
 
 const { Paragraph } = Typography
@@ -17,12 +20,25 @@ const _styleTask: React.CSSProperties = {
   maxWidth: '30vw',
 }
 
+const _styleTaskUnread: React.CSSProperties = {
+  margin: '0',
+  maxWidth: '30vw',
+  fontWeight: 'bold',
+}
+
 const _styleProject: React.CSSProperties = {
   margin: '0',
   //width: '20vw',
 }
 
-const ParagraphExample: React.FC<Name> = ({ type, name, task }) => {
+const ParagraphExample: React.FC<Name> = ({
+  type,
+  name,
+  task,
+  ref,
+  userType,
+  read,
+}) => {
   const [ellipsis, setEllipsis] = useState(true)
   const [expand, setExpand] = useState(false)
   const [counter, setCounter] = useState(0)
@@ -44,6 +60,7 @@ const ParagraphExample: React.FC<Name> = ({ type, name, task }) => {
         {type ? (
           <Space direction="horizontal">
             <Paragraph
+              ref={ref}
               ellipsis={
                 ellipsis
                   ? {
@@ -54,7 +71,8 @@ const ParagraphExample: React.FC<Name> = ({ type, name, task }) => {
                     }
                   : false
               }
-              style={_styleTask}
+              // style={_styleTask}
+              style={!read ? _styleTaskUnread : _styleTask}
             >
               <Tooltip title={name}>{name}</Tooltip>
             </Paragraph>
@@ -72,6 +90,7 @@ const ParagraphExample: React.FC<Name> = ({ type, name, task }) => {
         ) : (
           <Space direction="horizontal">
             <Paragraph
+              ref={ref}
               ellipsis={
                 ellipsis
                   ? {

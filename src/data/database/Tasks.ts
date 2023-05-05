@@ -1,3 +1,4 @@
+import { PriorityCategory, StatusCategory } from './Categories'
 import { ProjectRepsonse } from './Project'
 import { Users } from './Users'
 
@@ -12,6 +13,8 @@ export interface Tasks {
   DueDate?: Date
   DoneDate?: Date
   CloseDate?: Date
+  CancelDate?: Date
+  Creator?: Users
   Assignee: Users[]
   Watcher: Users[]
   Tag: string[]
@@ -32,6 +35,11 @@ export interface Tasks {
   userName?: string
   tasks?: any[]
   Project?: ProjectRepsonse
-  ParentTask?: string
+  ParentTask?: any
   SummaryReport?: string
+  StatusCategory?: any
+  PriorityCategory?: any
+  AssigneeRead?: boolean
+  ReporterRead?: boolean
+  ReasonForClosed?: string
 }

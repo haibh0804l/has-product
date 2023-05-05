@@ -12,13 +12,17 @@ const GetAllTasks = async (serviceUrl: string) => {
   })
 }
 
-const GetTasksById = async (serviceUrl: string, taskId: string) => {
+const GetTasksById = async (
+  serviceUrl: string,
+  taskId: string,
+  userId: string,
+) => {
   serviceUrl = process.env.REACT_APP_API_TASK_GETONETASK!
   let output: Tasks[] = []
   await axios
     .post(
       serviceUrl,
-      { taskId: taskId, populateLevel: 1 },
+      { userId: userId, taskId: taskId, populateLevel: 2 },
       {
         headers: ServiceHeader(),
       },
@@ -188,19 +192,22 @@ const InsertTask = async (serviceUrl: string, task: any) => {
     Reporter: user,
     GroupPath: '',
     SummaryReport: '',
+    errorMessage: '',
   }
 
-  await axios
-    .post<Tasks>(serviceUrl, task, {
+  try {
+    const response = await axios.post<Tasks>(serviceUrl, task, {
       headers: ServiceHeader(),
     })
-    .then((res) => {
-      output = JSON.parse(JSON.stringify(res.data))
-      return output
-    })
-    .catch(function (error) {
-      console.log(error)
-    })
+    if (response.status !== 200) {
+      output.errorMessage = response.statusText
+    } else {
+      output.errorMessage = ''
+    }
+  } catch (error: any) {
+    output.errorMessage = error.toString()
+  }
+
   return output
 }
 

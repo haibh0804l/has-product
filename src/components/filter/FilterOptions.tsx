@@ -8,10 +8,12 @@ import { useEffect, useState } from 'react'
 import {
   ASSIGNEE,
   MANAGER,
+  PRIORITY,
   PROJECT,
   REPORTER,
   revertAll,
   SELECT,
+  STATUS,
 } from '../../util/ConfigText'
 import RemoteSelector from '../selector/RemoteSelector'
 import StatusSelector from '../selector/StatusSelector'
@@ -36,6 +38,7 @@ import {
 import { RangePickerProps } from 'antd/es/date-picker'
 import RemoteSelectorProject from '../selector/RemoteSelectorProject'
 import { getCookie } from 'typescript-cookie'
+import RemoteSelectorCategory from '../selector/RemoteSelectorCategory'
 
 dayjs.extend(customParseFormat)
 
@@ -88,11 +91,11 @@ const Comp: React.FC<FilterOptionInput> = ({ tabs }) => {
     dispatch(revertAll())
     dispatch(addTabs(tabs))
     if (tabs === '1') {
-      dispatch(addAssignee([sessionStorage.getItem('user_id')!]))
+      dispatch(addAssignee([localStorage.getItem('user_id')!]))
     } else if (tabs === '2') {
-      dispatch(addReporter([sessionStorage.getItem('user_id')!]))
+      dispatch(addReporter([localStorage.getItem('user_id')!]))
     } else {
-      dispatch(addManager([sessionStorage.getItem('user_id')!]))
+      dispatch(addManager([localStorage.getItem('user_id')!]))
     }
   }
 
@@ -196,11 +199,23 @@ const Comp: React.FC<FilterOptionInput> = ({ tabs }) => {
       )}
       <MiniComp
         condition={<p>Status</p>}
-        value={<StatusSelector initValue={initValue.status} />}
+        value={
+          <RemoteSelectorCategory
+            type={'Status'}
+            placeHolder={SELECT + ' ' + STATUS}
+            initValue={initValue.statusCategory}
+          />
+        }
       />
       <MiniComp
         condition={<p>Priority</p>}
-        value={<PrioritySelector initValue={initValue.priority} />}
+        value={
+          <RemoteSelectorCategory
+            type={'Priority'}
+            placeHolder={SELECT + ' ' + PRIORITY}
+            initValue={initValue.priorityCategory}
+          />
+        }
       />
       <MiniComp
         condition={<p>Due Date</p>}

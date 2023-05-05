@@ -95,6 +95,7 @@ export const MANAGER = 'manager'
 export const REPORTER = 'reporter'
 export const SELECT = 'Select'
 export const STATUS = 'status'
+export const PRIORITY = 'priority'
 export const CLOSEDTASK = 'closed task'
 export const TASKNAME = 'TaskName'
 export const SEARCH = 'Search'
@@ -124,4 +125,8 @@ export const GENERIC_ERROR =
 export const TYPE = 'Type'
 export const DESCRIPTION = 'description'
 export const SUMMARY = 'summary'
+export const MAIN_TASK_DUE_DATE = 'mainTaskDueDate'
+export const CURRENT_TASK_DUE_DATE = 'currentTaskDueDate'
+export const SUB_TASK_DUE_DATE = 'subTaskDueDate'
+
 export const revertAll = createAction('REVERT_ALL')

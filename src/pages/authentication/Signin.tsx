@@ -15,6 +15,15 @@ import { useAppDispatch, useAppSelector } from '../../redux/app/hook'
 import { setUserInfo } from '../../redux/features/userInfo/userInfoSlice'
 import { addManager } from '../../redux/features/filter/filterSlice'
 import { PageName } from '../../data/interface/PageName'
+import {
+  addStatusData,
+  fetchStatus,
+} from '../../redux/features/categories/statusSlice'
+import { GetCategories } from '../../data/services/categories'
+import {
+  CategoriesRequest,
+  StatusCategory,
+} from '../../data/database/Categories'
 
 type MessageResponse = {
   message: string
@@ -22,6 +31,7 @@ type MessageResponse = {
 }
 
 const Signin: React.FC<PageName> = ({ name }) => {
+  localStorage.clear()
   removeCookie('user_id')
   removeCookie('userInfo')
   const [form] = Form.useForm()
@@ -38,6 +48,12 @@ const Signin: React.FC<PageName> = ({ name }) => {
   useEffect(() => {
     document.title = name
   }, [])
+
+  /*   useEffect(() => {
+    if (routedChange) {
+     
+    }
+  }, [routedChange]) */
 
   const routeChange = (serviceUrl: string) => {
     setLoading(true)
@@ -78,14 +94,13 @@ const Signin: React.FC<PageName> = ({ name }) => {
             process.env.REACT_APP_API_USERS_GETUSERID!,
             //'api.users/getuserid',
             { username }.username,
-          ).then((r) => {
+          ).then(async (r) => {
             if (r) {
               if (r.code !== 200) {
                 setLoading(false)
                 setErr(r.message + ' ' + r.code)
                 //alert('Service failed with code ' + r.code)
               } else {
-                console.log(JSON.stringify(r))
                 setCookie('user_id', r._id as string, { expires: 1 })
                 setCookie(
                   'user_name',
@@ -96,25 +111,53 @@ const Signin: React.FC<PageName> = ({ name }) => {
                 setCookie('userInfo', JSON.stringify(r) as string, {
                   expires: 1,
                 })
-                sessionStorage.setItem('user_id', r._id as string)
+                localStorage.setItem('user_id', r._id as string)
                 dispatch(setUserInfo(r))
-
-                if (sessionStorage.getItem('location')) {
-                  /* console.log(sessionStorage.getItem('location')!) */
+                try {
+                  const response = await GetCategories({ type: 'Status' })
+                  const responsePri = await GetCategories({ type: 'Priority' })
+                  localStorage.setItem(
+                    'statusData',
+                    JSON.stringify(response.data as StatusCategory[]),
+                  )
+                  localStorage.setItem(
+                    'priorityData',
+                    JSON.stringify(responsePri.data as StatusCategory[]),
+                  )
+                  if (localStorage.getItem('location')) {
+                    if (
+                      JSON.parse(localStorage.getItem('location')!).pathname !==
+                      '/'
+                    ) {
+                      navigate(
+                        JSON.parse(localStorage.getItem('location')!).pathname,
+                      )
+                    } else {
+                      navigate(CustomRoutes.MyWork.path)
+                    }
+                    localStorage.removeItem('location')
+                  } else {
+                    navigate(CustomRoutes.MyWork.path)
+                  }
+                } catch {
+                  localStorage.setItem('statusData', JSON.stringify([]))
+                  localStorage.setItem('priorityData', JSON.stringify([]))
+                }
+                /* if (localStorage.getItem('location')) {
                   if (
-                    JSON.parse(sessionStorage.getItem('location')!).pathname !==
+                    JSON.parse(localStorage.getItem('location')!).pathname !==
                     '/'
                   ) {
                     navigate(
-                      JSON.parse(sessionStorage.getItem('location')!).pathname,
+                      JSON.parse(localStorage.getItem('location')!).pathname,
                     )
                   } else {
                     navigate(CustomRoutes.MyWork.path)
                   }
-                  sessionStorage.removeItem('location')
+                  localStorage.removeItem('location')
                 } else {
                   navigate(CustomRoutes.MyWork.path)
-                }
+                } */
               }
             } else {
               setLoading(false)

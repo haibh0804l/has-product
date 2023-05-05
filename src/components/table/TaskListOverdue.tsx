@@ -40,6 +40,13 @@ import {
 } from '../../redux/features/filter/filterSlice'
 import { FilterRequestWithType } from '../../data/interface/FilterInterface'
 import { SearchBar } from '../filter/SearchBar'
+import {
+  PriorityCategory,
+  StatusCategory,
+} from '../../data/database/Categories'
+import { ReactElementMapping, Sorter } from './ReactElementMapping'
+import { text } from 'stream/consumers'
+import { Text } from 'react-bootstrap/lib/Navbar'
 
 interface DataType {
   key: string
@@ -75,19 +82,30 @@ const TaskListOverDue: React.FC<InputData> = ({
   const location = useLocation()
   const refresh = location.state
   const [input, setInput] = useState<Tasks[]>([])
-  const [searchValue, setSearchValue] = useState(
-    sessionStorage.getItem('searchValueTaskReport')
-      ? sessionStorage.getItem('searchValueTaskReport')
-      : '',
-  )
   const [dataInput, setDataInput] = useState<DataType[]>([])
   const [isShowMore, setShowMore] = useState(true)
   const [showCompleted, setShowCompleted] = useState(
-    sessionStorage.getItem('showClosedTaskReport') === 'true',
+    localStorage.getItem('showClosedTaskReport') === 'true',
   )
   const [loading, setLoading] = useState(false)
   const filterInit = useAppSelector((state) => state.filter)
+  const statusList = JSON.parse(
+    localStorage.getItem('statusData')!,
+  ) as StatusCategory[]
   const dispatch = useAppDispatch()
+
+  const styleStatusRead: React.CSSProperties = {
+    margin: '0',
+    maxWidth: '30vw',
+    fontWeight: 'bold',
+  }
+
+  const styleStatusUnRead: React.CSSProperties = {
+    margin: '0',
+    borderLeft: '4px solid #0891B2',
+  }
+  const [styleborder, setStyleBorder] =
+    useState<React.CSSProperties>(styleStatusUnRead)
 
   const columns: ColumnsType<DataType> = [
     {
@@ -95,6 +113,16 @@ const TaskListOverDue: React.FC<InputData> = ({
       dataIndex: 'status',
       align: 'center',
       width: '5vw',
+      render(text, record) {
+        return {
+          props: {
+            style: text.props.children.props.task.ReporterRead
+              ? styleStatusRead
+              : styleStatusUnRead,
+          },
+          children: <div>{text}</div>,
+        }
+      },
     },
     {
       title: 'Task',
@@ -105,6 +133,7 @@ const TaskListOverDue: React.FC<InputData> = ({
       title: 'Project',
       dataIndex: 'project',
       width: '20vw',
+      // sorter: (a, b) => Sorter(a.project, b.project),
     },
     /*  {
     title: 'Path',
@@ -115,12 +144,14 @@ const TaskListOverDue: React.FC<InputData> = ({
       title: 'Assignee',
       dataIndex: 'assignee',
       width: '12vw',
+      // sorter: (a, b) => Sorter(a.assignee, b.assignee),
     },
     {
       title: 'Priority',
       dataIndex: 'priority',
       align: 'center',
       width: '10vw',
+      sorter: (a, b) => Sorter(a.priority, b.priority, ''),
     },
     /* {
     title: 'Start date',
@@ -131,6 +162,7 @@ const TaskListOverDue: React.FC<InputData> = ({
       title: 'Due date',
       dataIndex: 'dueDate',
       width: '10vw',
+      sorter: (a, b) => Sorter(a.dueDate, b.dueDate, 'dueDate'),
     },
     {
       ...(showCompleted === true
@@ -149,7 +181,7 @@ const TaskListOverDue: React.FC<InputData> = ({
     let inputObj: Tasks[] = JSON.parse(JSON.stringify(inputTaskList))
     inputLength = inputObj.length
 
-    inputObj.forEach((element) => {
+    /* inputObj.forEach((element) => {
       if (element.Priority === 'Urgent') {
         element.PriorityNum = 1
       } else if (element.Priority === 'High') {
@@ -161,11 +193,12 @@ const TaskListOverDue: React.FC<InputData> = ({
       } else {
         element.PriorityNum = 5
       }
-    })
+    }) */
     inputObj = inputObj.sort(
       (a, b) =>
         new Date(a.DueDate!).getTime() - new Date(b.DueDate!).getTime() ||
-        (a.PriorityNum as number) - (b.PriorityNum as number) ||
+        (a.PriorityCategory as PriorityCategory).Level -
+          (b.PriorityCategory as PriorityCategory).Level ||
         new Date(a.CreateDate).getTime() - new Date(b.CreateDate).getTime(),
     )
 
@@ -183,109 +216,170 @@ const TaskListOverDue: React.FC<InputData> = ({
           getCookie('user_id')?.toString()!,
           inputObj[index].Assignee[0]._id!,
           inputObj[index].Reporter._id!,
-          inputObj[index].Status,
+          (
+            inputObj[index].StatusCategory as StatusCategory
+          ).CategoryId!.toString(),
         )
         _data.push({
           key: inputObj[index]._id ? index.toString() : index.toString(),
           status: (
-            <DropdownProps
-              type="Status"
-              text={inputObj[index].Status}
-              button={false}
-              taskId={inputObj[index]._id}
-              ignoreStt={_ignoreList}
-              task={inputObj[index]}
-              onClickMenu={handleMenuClickStatus}
+            <ReactElementMapping
+              customKey={(
+                inputObj[index].StatusCategory as StatusCategory
+              ).CategoryId!.toString()}
+              children={
+                <DropdownProps
+                  type="Status"
+                  text={(
+                    inputObj[index].StatusCategory as StatusCategory
+                  ).CategoryId!.toString()}
+                  button={false}
+                  taskId={inputObj[index]._id}
+                  ignoreStt={_ignoreList}
+                  task={inputObj[index]}
+                  onClickMenu={handleMenuClickStatus}
+                />
+              }
             />
           ),
 
           task: (
-            <div onClick={() => OnNavigate(inputObj[index])}>
-              <ParagraphExample
-                type="Task"
-                name={inputObj[index].TaskName}
-                task={inputObj[index]}
-              />
-            </div>
+            <ReactElementMapping
+              customKey={inputObj[index].TaskName}
+              children={
+                <div
+                  onClick={() => OnNavigate(inputObj[index])}
+                  style={{ width: 'auto' }}
+                  key={inputObj[index].TaskName}
+                >
+                  <ParagraphExample
+                    type="Task"
+                    name={inputObj[index].TaskName}
+                    task={inputObj[index]}
+                    userType="Reporter"
+                    read={inputObj[index].ReporterRead}
+                  />
+                </div>
+              }
+            />
           ),
           project: (
-            <>
-              <div>
-                <ParagraphExample
-                  name={
-                    inputObj[index].Project
-                      ? inputObj[index].Project?.ProjectName
-                      : '-'
-                  }
-                  task={inputObj[index]}
-                />
-              </div>
-            </>
+            <ReactElementMapping
+              customKey={
+                inputObj[index].Project?.ProjectName
+                  ? inputObj[index].Project?.ProjectName
+                  : '-'
+              }
+              children={
+                <div>
+                  <ParagraphExample
+                    name={
+                      inputObj[index].Project
+                        ? inputObj[index].Project?.ProjectName
+                        : '-'
+                    }
+                    task={inputObj[index]}
+                  />
+                </div>
+              }
+            />
           ),
           assignee: <IconGroup inputList={inputObj[index].Assignee} />,
           priority: (
-            <DropdownProps
-              type="Priority"
-              text={
-                inputObj[index].Priority
-                  ? inputObj[index].Priority
-                  : 'undefined'
+            <ReactElementMapping
+              customKey={
+                (inputObj[index].PriorityCategory as PriorityCategory).Level
               }
-              button={false}
-              taskId={inputObj[index]._id}
-              ignoreStt={_ignoreList}
-              mode={UPDATE_MODE}
+              children={
+                <DropdownProps
+                  type="Priority"
+                  text={(
+                    inputObj[index].PriorityCategory as PriorityCategory
+                  ).CategoryId!.toString()}
+                  button={false}
+                  taskId={inputObj[index]._id}
+                  task={inputObj[index]}
+                />
+              }
             />
           ),
           dueDate: (
             <>
               {inputObj[index].DueDate === null ? (
                 ''
-              ) : inputObj[index].Status === 'Incompleted' ||
-                inputObj[index].Status === 'Completed' ? (
+              ) : (inputObj[index].StatusCategory as StatusCategory)
+                  .CategoryId == 3 ||
+                (inputObj[index].StatusCategory as StatusCategory).CategoryId ==
+                  4 ? (
                 inputObj[index].CloseDate! === undefined ? (
-                  <div>
-                    <DateFormatter
-                      dateString={inputObj[index].DueDate!}
-                      task={inputObj[index]}
-                    />
-                  </div>
+                  <ReactElementMapping
+                    customKey={inputObj[index].DueDate}
+                    children={
+                      <div>
+                        <DateFormatter
+                          dateString={inputObj[index].DueDate!}
+                          task={inputObj[index]}
+                        />
+                      </div>
+                    }
+                  />
                 ) : new Date(inputObj[index].DueDate!) >=
                   new Date(inputObj[index].CloseDate!) ? (
-                  <div>
-                    <DateFormatter
-                      dateString={inputObj[index].DueDate!}
-                      task={inputObj[index]}
-                    />
-                  </div>
+                  <ReactElementMapping
+                    customKey={inputObj[index].DueDate}
+                    children={
+                      <div>
+                        <DateFormatter
+                          dateString={inputObj[index].DueDate!}
+                          task={inputObj[index]}
+                        />
+                      </div>
+                    }
+                  />
                 ) : (
-                  <div className="overdue">
-                    <DateFormatter
-                      dateString={inputObj[index].DueDate!}
-                      task={inputObj[index]}
-                    />
-                  </div>
+                  <ReactElementMapping
+                    customKey={inputObj[index].DueDate}
+                    children={
+                      <div className="overdue">
+                        <DateFormatter
+                          dateString={inputObj[index].DueDate!}
+                          task={inputObj[index]}
+                        />
+                      </div>
+                    }
+                  />
                 )
               ) : new Date() > new Date(inputObj[index].DueDate!) ? (
-                <div className="overdue">
-                  <DateFormatter
-                    dateString={inputObj[index].DueDate!}
-                    task={inputObj[index]}
-                  />
-                </div>
+                <ReactElementMapping
+                  customKey={inputObj[index].DueDate}
+                  children={
+                    <div className="overdue">
+                      <DateFormatter
+                        dateString={inputObj[index].DueDate!}
+                        task={inputObj[index]}
+                      />
+                    </div>
+                  }
+                />
               ) : (
-                <div>
-                  <DateFormatter
-                    dateString={inputObj[index].DueDate!}
-                    task={inputObj[index]}
-                  />
-                </div>
+                <ReactElementMapping
+                  customKey={inputObj[index].DueDate}
+                  children={
+                    <div>
+                      <DateFormatter
+                        dateString={inputObj[index].DueDate!}
+                        task={inputObj[index]}
+                      />
+                    </div>
+                  }
+                />
               )}
             </>
           ),
           score: <p>{inputObj[index].Score ? inputObj[index].Score : '_'}</p>,
         })
         countIndex++
+        // console.log(Date.parse(inputObj[index].DueDate!.toString()))
       }
       setDataInput(_data)
     } else {
@@ -300,7 +394,7 @@ const TaskListOverDue: React.FC<InputData> = ({
     let inputObj: Tasks[] = JSON.parse(JSON.stringify(inputTaskList))
     inputLength = inputObj.length
 
-    inputObj.forEach((element) => {
+    /* inputObj.forEach((element) => {
       if (element.Priority === 'Urgent') {
         element.PriorityNum = 1
       } else if (element.Priority === 'High') {
@@ -312,10 +406,11 @@ const TaskListOverDue: React.FC<InputData> = ({
       } else {
         element.PriorityNum = 5
       }
-    })
+    }) */
     inputObj = inputObj.sort(
       (a, b) =>
-        (a.PriorityNum as number) - (b.PriorityNum as number) ||
+        (a.PriorityCategory as PriorityCategory).Level -
+          (b.PriorityCategory as PriorityCategory).Level ||
         new Date(b.DoneDate ? b.DoneDate : new Date()).getTime() -
           new Date(a.CloseDate ? a.CloseDate : new Date()).getTime(),
     )
@@ -329,103 +424,163 @@ const TaskListOverDue: React.FC<InputData> = ({
           getCookie('user_id')?.toString()!,
           inputObj[index].Assignee[0]._id!,
           inputObj[index].Reporter._id!,
-          inputObj[index].Status,
+          (
+            inputObj[index].StatusCategory as StatusCategory
+          ).CategoryId!.toString(),
         )
         _data.push({
           key: inputObj[index]._id ? index.toString() : index.toString(),
           status: (
-            <DropdownProps
-              type="Status"
-              text={inputObj[index].Status}
-              button={false}
-              taskId={inputObj[index]._id}
-              ignoreStt={_ignoreList}
-              task={inputObj[index]}
-              onClickMenu={handleMenuClickStatus}
-              mode={UPDATE_MODE}
+            <ReactElementMapping
+              customKey={(
+                inputObj[index].StatusCategory as StatusCategory
+              ).CategoryId!.toString()}
+              children={
+                <DropdownProps
+                  type="Status"
+                  text={(
+                    inputObj[index].StatusCategory as StatusCategory
+                  ).CategoryId!.toString()}
+                  button={false}
+                  taskId={inputObj[index]._id}
+                  ignoreStt={_ignoreList}
+                  task={inputObj[index]}
+                  onClickMenu={handleMenuClickStatus}
+                />
+              }
             />
           ),
+
           task: (
-            <div onClick={() => OnNavigate(inputObj[index])}>
-              <ParagraphExample
-                type="Task"
-                name={inputObj[index].TaskName}
-                task={inputObj[index]}
-              />
-            </div>
+            <ReactElementMapping
+              customKey={inputObj[index].TaskName}
+              children={
+                <div
+                  onClick={() => OnNavigate(inputObj[index])}
+                  style={{ width: 'auto' }}
+                  key={inputObj[index].TaskName}
+                >
+                  <ParagraphExample
+                    type="Task"
+                    name={inputObj[index].TaskName}
+                    task={inputObj[index]}
+                    userType="Reporter"
+                    read={inputObj[index].ReporterRead}
+                  />
+                </div>
+              }
+            />
           ),
           project: (
-            <>
-              <div>
-                <ParagraphExample
-                  name={
-                    inputObj[index].Project
-                      ? inputObj[index].Project?.ProjectName
-                      : '-'
-                  }
-                  task={inputObj[index]}
-                />
-              </div>
-            </>
+            <ReactElementMapping
+              customKey={
+                inputObj[index].Project?.ProjectName
+                  ? inputObj[index].Project?.ProjectName
+                  : '-'
+              }
+              children={
+                <div>
+                  <ParagraphExample
+                    name={
+                      inputObj[index].Project
+                        ? inputObj[index].Project?.ProjectName
+                        : '-'
+                    }
+                    task={inputObj[index]}
+                  />
+                </div>
+              }
+            />
           ),
           assignee: <IconGroup inputList={inputObj[index].Assignee} />,
           priority: (
-            <DropdownProps
-              type="Priority"
-              text={
-                inputObj[index].Priority
-                  ? inputObj[index].Priority
-                  : 'undefined'
+            <ReactElementMapping
+              customKey={
+                (inputObj[index].PriorityCategory as PriorityCategory).Level
               }
-              button={false}
-              taskId={inputObj[index]._id}
-              ignoreStt={_ignoreList}
-              mode={UPDATE_MODE}
+              children={
+                <DropdownProps
+                  type="Priority"
+                  text={(
+                    inputObj[index].PriorityCategory as PriorityCategory
+                  ).CategoryId!.toString()}
+                  button={false}
+                  taskId={inputObj[index]._id}
+                  task={inputObj[index]}
+                />
+              }
             />
           ),
           dueDate: (
             <>
               {inputObj[index].DueDate === null ? (
                 ''
-              ) : inputObj[index].Status === 'Incompleted' ||
-                inputObj[index].Status === 'Completed' ? (
+              ) : (inputObj[index].StatusCategory as StatusCategory)
+                  .CategoryId == 3 ||
+                (inputObj[index].StatusCategory as StatusCategory).CategoryId ==
+                  4 ? (
                 inputObj[index].CloseDate! === undefined ? (
-                  <div>
-                    <DateFormatter
-                      dateString={inputObj[index].DueDate!}
-                      task={inputObj[index]}
-                    />
-                  </div>
+                  <ReactElementMapping
+                    customKey={inputObj[index].DueDate}
+                    children={
+                      <div>
+                        <DateFormatter
+                          dateString={inputObj[index].DueDate!}
+                          task={inputObj[index]}
+                        />
+                      </div>
+                    }
+                  />
                 ) : new Date(inputObj[index].DueDate!) >=
                   new Date(inputObj[index].CloseDate!) ? (
-                  <div>
-                    <DateFormatter
-                      dateString={inputObj[index].DueDate!}
-                      task={inputObj[index]}
-                    />
-                  </div>
+                  <ReactElementMapping
+                    customKey={inputObj[index].DueDate}
+                    children={
+                      <div>
+                        <DateFormatter
+                          dateString={inputObj[index].DueDate!}
+                          task={inputObj[index]}
+                        />
+                      </div>
+                    }
+                  />
                 ) : (
-                  <div className="overdue">
-                    <DateFormatter
-                      dateString={inputObj[index].DueDate!}
-                      task={inputObj[index]}
-                    />
-                  </div>
+                  <ReactElementMapping
+                    customKey={inputObj[index].DueDate}
+                    children={
+                      <div className="overdue">
+                        <DateFormatter
+                          dateString={inputObj[index].DueDate!}
+                          task={inputObj[index]}
+                        />
+                      </div>
+                    }
+                  />
                 )
               ) : new Date() > new Date(inputObj[index].DueDate!) ? (
-                <div className="overdue">
-                  <DateFormatter
-                    dateString={inputObj[index].DueDate!}
-                    task={inputObj[index]}
-                  />
-                </div>
+                <ReactElementMapping
+                  customKey={inputObj[index].DueDate}
+                  children={
+                    <div className="overdue">
+                      <DateFormatter
+                        dateString={inputObj[index].DueDate!}
+                        task={inputObj[index]}
+                      />
+                    </div>
+                  }
+                />
               ) : (
-                <div>
-                  <DateFormatter
-                    dateString={inputObj[index].DueDate!}
-                    task={inputObj[index]}
-                  />
-                </div>
+                <ReactElementMapping
+                  customKey={inputObj[index].DueDate}
+                  children={
+                    <div>
+                      <DateFormatter
+                        dateString={inputObj[index].DueDate!}
+                        task={inputObj[index]}
+                      />
+                    </div>
+                  }
+                />
               )}
             </>
           ),
@@ -575,4 +730,4 @@ const TaskListOverDue: React.FC<InputData> = ({
   )
 }
 
-export default memo(TaskListOverDue)
+export default TaskListOverDue

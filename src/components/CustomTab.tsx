@@ -25,7 +25,7 @@ import {
   addTabs,
 } from '../redux/features/filter/filterSlice'
 import { revertAll } from '../util/ConfigText'
-import { CustomRoutes } from '../customRoutes'
+import { StatusCategory } from '../data/database/Categories'
 
 const App: React.FC = ({}) => {
   const defaultTabs = useParams()
@@ -47,13 +47,12 @@ const App: React.FC = ({}) => {
     department: userInfo.Group![0].Name,
     baseOnMonth: 1,
   }
-
   const _myScore = useAppSelector((state) => state.personalScore)
   const dispatch = useAppDispatch()
 
   useEffect(() => {
-    if (sessionStorage.getItem('tab')) {
-      if (sessionStorage.getItem('tab') !== '1') {
+    if (localStorage.getItem('tab')) {
+      if (localStorage.getItem('tab') !== '1') {
         setScoreMonth('')
       } else {
         dispatch(fetchPersonalScore(personalScoreReq))
@@ -83,7 +82,7 @@ const App: React.FC = ({}) => {
   }, [_myScore.loading, _myScore.score.length])
 
   const OnChange = (key: string) => {
-    sessionStorage.setItem('tab', key)
+    localStorage.setItem('tab', key)
     if (key === '1') {
       dispatch(revertAll())
       dispatch(addAssignee([getCookie('user_id')!]))
@@ -112,8 +111,8 @@ const App: React.FC = ({}) => {
             defaultActiveKey={
               defaultTabs.id
                 ? defaultTabs.id
-                : sessionStorage.getItem('tab')?.toString()
-                ? sessionStorage.getItem('tab')?.toString()
+                : localStorage.getItem('tab')?.toString()
+                ? localStorage.getItem('tab')?.toString()
                 : '1'
             }
             onChange={OnChange}
@@ -187,8 +186,8 @@ const App: React.FC = ({}) => {
           defaultActiveKey={
             defaultTabs.id
               ? defaultTabs.id
-              : sessionStorage.getItem('tab')?.toString()
-              ? sessionStorage.getItem('tab')?.toString()
+              : localStorage.getItem('tab')?.toString()
+              ? localStorage.getItem('tab')?.toString()
               : '1'
           }
           onChange={OnChange}

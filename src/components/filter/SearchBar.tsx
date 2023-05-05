@@ -17,12 +17,14 @@ import {
   REPORTER,
   SEARCH,
   SELECT,
+  STATUS,
 } from '../../util/ConfigText'
 import ProjectCreation from '../project/ProjectCreation'
 import RemoteSelector from '../selector/RemoteSelector'
 import RemoteSelectorProject from '../selector/RemoteSelectorProject'
 import StatusSelector from '../selector/StatusSelector'
 import FilterOptions from './FilterOptions'
+import RemoteSelectorCategory from '../selector/RemoteSelectorCategory'
 
 interface SearchBarInput {
   tabs: string
@@ -117,7 +119,11 @@ const SearchBar: React.FC<SearchBarInput> = ({ tabs }) => {
           </Col>
         )}
         <Col span={3}>
-          <StatusSelector initValue={initValue.status} />
+          <RemoteSelectorCategory
+            type={'Status'}
+            placeHolder={SELECT + ' ' + STATUS}
+            initValue={initValue.statusCategory}
+          />
         </Col>
         <Col span={3}>
           <Space direction="horizontal" size={'small'}>

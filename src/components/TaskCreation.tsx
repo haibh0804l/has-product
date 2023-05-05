@@ -10,7 +10,7 @@ import {
   Tooltip,
   Upload,
 } from 'antd'
-import type { UploadProps, DatePickerProps } from 'antd'
+import type { UploadProps, DatePickerProps, Dropdown, Select } from 'antd'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import '../assets/css/index.css'
@@ -25,7 +25,7 @@ import { InsertTask } from '../data/services/tasksService'
 import OverDueDate from '../util/OverDueDate'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
-import { getCookie, setCookie } from 'typescript-cookie'
+import { getCookie, removeCookie, setCookie } from 'typescript-cookie'
 import { useNavigate } from 'react-router-dom'
 import { Tasks } from '../data/database/Tasks'
 import SubTask from './SubTasks'
@@ -34,9 +34,11 @@ import {
   ASSIGNEE,
   DEFAULT_STT,
   INSERT_MODE,
+  PRIORITY,
   PROJECT,
   REPORTER,
   SELECT,
+  STATUS,
 } from '../util/ConfigText'
 import ObjectID from 'bson-objectid'
 import { SubTaskCompProp, SubTaskProp } from '../data/interface/SubTaskProp'
@@ -52,6 +54,18 @@ import { fetchFilterResult } from '../redux/features/filter/filterSlice'
 import { FilterRequestWithType } from '../data/interface/FilterInterface'
 import { ProjectRepsonse, ProjectRequest } from '../data/database/Project'
 import { GetUsersByProject } from '../data/services/projectService'
+import {
+  CategoriesRequest,
+  PriorityCategory,
+  StatusCategory,
+} from '../data/database/Categories'
+import DefaultUsers from '../util/DefaultUsers'
+import { RangePickerProps } from 'antd/es/date-picker'
+import { colors } from '@novu/notification-center'
+
+import type { MenuProps } from 'antd'
+import { AudioOutlined } from '@ant-design/icons'
+import UserIcon from './UserIcon'
 
 interface AttachmentProps {
   uid: string
@@ -79,6 +93,26 @@ const customFormat: DatePickerProps['format'] = (value) => {
   }
 }
 
+const disabledDate: RangePickerProps['disabledDate'] = (current) => {
+  // Can not select days before today and today
+  return current && current < dayjs().subtract(1, 'day').endOf('day')
+}
+
+///////////////////////////////////////////////
+interface UserData {
+  userData: Users[]
+  maxCount: number
+  icon: React.ReactNode
+  tooltipText?: string
+  inputUserData?: Users[]
+  onClickMenu?: (e: any) => void
+  disabled?: boolean
+  mode?: string
+  assigneeUpdate?: boolean
+  taskId?: string
+  userItems?: MenuProps['items']
+}
+
 //const subTask: Tasks[] = []
 
 const TaskCreation: React.FC<TaskCreationInput> = ({
@@ -89,6 +123,7 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
   projectId,
   id,
 }) => {
+  const userInfo: Users = JSON.parse(getCookie('userInfo')!)
   const initFilter = useAppSelector((state) => state.filter)
   const navigate = useNavigate()
   //let reporterOptions: ItemProps[] = []
@@ -109,6 +144,7 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
   const [dueDate, setDueDate] = useState('')
   const [subTasksComp, setSubTaskComp] = useState<SubTaskCompProp[]>([])
   const [openSubTaskBtn, setOpenSubTaskBtn] = useState(true)
+  const [priority, setPriority] = useState<string>('6')
   const _assignUser: Users[] = []
   const [myTask, setMyTask] = useState<Tasks>({
     TaskName: '',
@@ -158,11 +194,31 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
   const [disabledSubtask, setDisabledSubtask] = useState(false)
 
   const filterInit = useAppSelector((state) => state.filter)
+  const statusList = JSON.parse(
+    localStorage.getItem('statusData')!,
+  ) as StatusCategory[]
+  const priorityList = JSON.parse(
+    localStorage.getItem('priorityData')!,
+  ) as PriorityCategory[]
   const dispatch = useAppDispatch()
 
   useEffect(() => {
-    setAssigneeValue(undefined)
-    setReporterValue(undefined)
+    if (!project) {
+      if (userInfo.Role!.Level < 3) {
+        setAssigneeValue({
+          label: userInfo.UserName!.substring(
+            0,
+            userInfo.UserName!.indexOf('@'),
+          ),
+          value: userInfo._id!,
+        })
+      }
+      //check for reporter
+      setReporterValue(DefaultUsers())
+    } else {
+      setAssigneeValue(undefined)
+      setReporterValue(undefined)
+    }
   }, [project])
 
   const customRequest = (options: any) => {
@@ -279,10 +335,18 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
   const onChangeProject = (e: SelectorValue) => {
     setProject(e)
     setIsProjectChange(!isProjectChange)
-    setCookie('projectId', e.value)
-    if (e.value) {
-      if (e.value !== '') {
-        setDisableBtn(false)
+    if (e) {
+      setCookie('projectId', e.value)
+    } else {
+      removeCookie('projectId')
+    }
+    if (e) {
+      if (e.value) {
+        if (e.value !== '') {
+          setDisableBtn(false)
+        } else {
+          setDisableBtn(true)
+        }
       } else {
         setDisableBtn(true)
       }
@@ -297,6 +361,10 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
 
   const onChangeReporterValue = (e: SelectorValue) => {
     setReporterValue(e)
+  }
+
+  const onChangePriority = (e: string) => {
+    setPriority(e)
   }
 
   const onChangeEditor = (
@@ -361,25 +429,20 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
     }
   }, [projectValue])
 
+  // const [checkDueDate, setCheckDueDate] = useState(true)
+  useEffect(() => {
+    if (dueDate === '' || dueDate === undefined) {
+      // setDisableSubmit(true)
+      form.setFieldsValue({ dueDate: '' })
+    } else {
+      // setDisableSubmit(false)
+      form.setFieldsValue({ dueDate: dueDate })
+    }
+  }, [dueDate])
+
   const [form] = Form.useForm()
   const group = Form.useWatch('group', form)
   //const attachments = Form.useWatch('attachment', form)
-
-  const onChangeReporter = (value: string) => {
-    setRep(value)
-    const users: Users = {
-      _id: value,
-    }
-    setMyTask({ ...myTask, Reporter: users })
-  }
-
-  const onChangeAssignee = (value: string) => {
-    setAssignee(value)
-    const users: Users = {
-      _id: value,
-    }
-    setMyTask({ ...myTask, Assignee: [users] })
-  }
 
   const handleOk = () => {
     setLoading(true)
@@ -396,6 +459,7 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
   }
 
   const clearData = () => {
+    form.setFieldsValue({ TaskName: '' })
     setTaskName('')
     setDueDate('')
     setValue([])
@@ -428,6 +492,27 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
       if (_task.Priority === undefined) {
         _task.Priority = 'Medium'
       }
+
+      const filterSttId = statusList.filter(
+        (element) =>
+          element.CategoryId == 1 &&
+          element.Type.toLowerCase() === STATUS.toLowerCase(),
+      )[0]._id
+
+      const filterPriorityId = priorityList.filter(
+        (element) =>
+          element.CategoryId == 6 &&
+          element.Type.toLowerCase() === PRIORITY.toLowerCase(),
+      )[0]._id
+
+      if (_task.StatusCategory === undefined) {
+        _task.StatusCategory = [filterSttId]
+      }
+
+      if (_task.PriorityCategory === undefined) {
+        _task.PriorityCategory = [filterPriorityId]
+      }
+
       if (getCookie('projectId')) {
         _task.Project = { _id: getCookie('projectId') } as ProjectRequest
       }
@@ -545,18 +630,31 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
     const attachmentItems: AttachmentProps[] = JSON.parse(
       JSON.stringify(attachment),
     )
-    attachmentItems.map((element) => {
+    attachmentItems.forEach((element) => {
       attachmentList.push(element.id)
     })
+
+    const filterSttId = statusList.filter(
+      (element) =>
+        element.CategoryId == 1 &&
+        element.Type.toLowerCase() === STATUS.toLowerCase(),
+    )[0]._id
+
+    const filterPriorityId = priorityList.filter(
+      (element) =>
+        element.CategoryId == +priority &&
+        element.Type.toLowerCase() === PRIORITY.toLowerCase(),
+    )[0]._id
 
     const myInputTask: Tasks = {
       _id: id,
       TaskName: taskName,
       Description: JSON.stringify(editorValue),
-      Priority: sessionStorage.getItem('priority' + taskKey)?.toString()!
-        ? sessionStorage.getItem('priority' + taskKey)?.toString()!
+      Priority: localStorage.getItem('priority' + taskKey)?.toString()!
+        ? localStorage.getItem('priority' + taskKey)?.toString()!
         : 'Medium',
       CreateDate: new Date(),
+      Creator: userInfo,
       //StartDate: new Date(startDate),
       Subtask: idList,
       DueDate: new Date(dueDate),
@@ -571,17 +669,19 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
       Project: project
         ? ({ _id: project.value } as ProjectRepsonse)
         : undefined,
+      StatusCategory: [filterSttId],
+      PriorityCategory: [filterPriorityId],
     }
 
     _subTaskFilter.unshift(myInputTask)
-
-    _subTaskFilter.forEach((element) => {})
 
     const myRealInputTask: InputTasks = {
       userId: getCookie('user_id')!.toString(),
       userName: getCookie('user_name')!.toString(),
       tasks: _subTaskFilter,
     }
+
+    //console.log('Input', myRealInputTask)
 
     await InsertTask(
       'api/task/addTaskWithSubtask',
@@ -590,18 +690,18 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
     form.resetFields()
     clearData()
 
-    sessionStorage.setItem('priority' + taskKey, 'Medium')
-    sessionStorage.setItem('status' + taskKey, 'To do')
+    localStorage.setItem('priority' + taskKey, 'Medium')
+    localStorage.setItem('status' + taskKey, 'To do')
 
-    if (sessionStorage.getItem('tab')?.toString()) {
-      if (sessionStorage.getItem('tab')?.toString() === '1') {
+    if (localStorage.getItem('tab')?.toString()) {
+      if (localStorage.getItem('tab')?.toString() === '1') {
         //my work
         const filterReq: FilterRequestWithType = {
           filter: filterInit.filter,
           type: ASSIGNEE,
         }
         dispatch(fetchFilterResult(filterReq))
-      } else if (sessionStorage.getItem('tab')?.toString() === '2') {
+      } else if (localStorage.getItem('tab')?.toString() === '2') {
         //report
         const filterReq: FilterRequestWithType = {
           filter: filterInit.filter,
@@ -642,6 +742,38 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
     setDisableSubmit(false)
     setDisabledSubtask(false)
   }
+
+  /////////////////////
+
+  // const [items, setItems] = useState<MenuProps['items']>([])
+  // useEffect(() => {
+  //   if (items && items.length === 0) {
+  //     let _items: MenuProps['items'] = []
+  //     for (let index = 0; index < userData.length; index++) {
+  //       _items!.push({
+  //         label: (
+  //           <>
+  //             <Space size="small" align="center">
+  //               <UserIcon
+  //                 username={userData[index].Name}
+  //                 userColor={userData[index].Color}
+  //                 tooltipName={userData[index].UserName}
+  //                 userInfo={userData[index]}
+  //               />
+  //               <h4>{userData[index].Name}</h4>
+  //             </Space>
+  //           </>
+  //         ),
+  //         key: userData[index]._id as string,
+  //       })
+
+  //       _items!.push({
+  //         type: 'divider',
+  //       })
+  //     }
+  //     setItems(_items)
+  //   }
+  // }, [userData])
 
   return (
     <>
@@ -712,6 +844,56 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
                   onChangeSelectorFunc={onChangeProject}
                   projectStatus={ACTIVE}
                 />
+                <>
+                  <Space
+                    align="baseline"
+                    size={5}
+                    style={{ marginTop: '10px', marginBottom: '-20px' }}
+                  >
+                    <Tooltip placement="top" title="Priority">
+                      <DropdownProps
+                        type={'Priority'}
+                        text={priority}
+                        id={taskKey}
+                        onClickMenu={onChangePriority}
+                      />
+                    </Tooltip>
+
+                    <Form.Item
+                      name="dueDate"
+                      rules={[{ required: true, message: '' }]}
+                    >
+                      <Space direction="horizontal">
+                        <DatePicker
+                          className={'datePicker'}
+                          placeholder=""
+                          showTime={{
+                            format: 'HH:mm:ss',
+                            defaultValue: dayjs('23:59:59', 'HH:mm:ss'),
+                          }}
+                          format={customFormat}
+                          onChange={onChangeDate}
+                          suffixIcon={<FontAwesomeIcon icon={faCalendar} />}
+                          style={{
+                            width: '32px',
+                            boxSizing: 'border-box',
+                            padding: '4px 9px 4px 0px',
+                            borderBottomLeftRadius: '100px',
+                            borderTopRightRadius: '100px',
+                            borderTopLeftRadius: '100px',
+                            borderBottomRightRadius: '100px',
+                            WebkitBorderRadius: '100px',
+                            cursor: 'pointer',
+                          }}
+                          allowClear={false}
+                        />
+                        {dueDate !== '' && (
+                          <OverDueDate inputDate={new Date(dueDate)} />
+                        )}
+                      </Space>
+                    </Form.Item>
+                  </Space>
+                </>
               </Form.Item>
               <Form.Item name="assignee" style={{ width: '25%' }}>
                 <RemoteSelectorSingle
@@ -721,6 +903,7 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
                   isProjectFixed={isProjectFixed}
                   projectId={project ? project.value : undefined}
                   isProjectChange={isProjectChange}
+                  initValue={assigneeValue}
                 />
               </Form.Item>
               <Form.Item
@@ -734,12 +917,12 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
                   isProjectFixed={isProjectFixed}
                   projectId={project ? project.value : undefined}
                   isProjectChange={isProjectChange}
+                  initValue={reporterValue}
                 />
               </Form.Item>
             </Input.Group>
           </Form.Item>
-
-          <Form.Item name="description">
+          <Form.Item name="description" style={{ marginTop: '-20px' }}>
             <ReactQuill
               //ref={reactQuillRef}
               placeholder="Type description"
@@ -751,30 +934,16 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
                   ['bold', 'italic', 'underline', 'strike'],
 
                   [{ color: [] }, { background: [] }],
-
-                  /* [{ script: 'sub' }, { script: 'super' }], */
-
-                  /* [
-                        { header: 1 },
-                        { header: 2 }, 
-                        'blockquote',
-                        'code-block',
-                      ], */
-
-                  [
-                    { list: 'ordered' },
-                    { list: 'bullet' },
-                    /* { indent: '-1' },
-                        { indent: '+1' }, */
-                  ],
-
-                  /* [{ direction: 'rtl' }, { align: [] }],
-
-                      ['link', 'image', 'video', 'formula'],
-                        
-                      ['clean'] */
+                  [{ list: 'ordered' }, { list: 'bullet' }],
                   ['image'],
                 ],
+                magicUrl: {
+                  // Regex used to check URLs during typing
+                  urlRegularExpression:
+                    /(https?:\/\/[\S]+)|(www.[\S]+)|(tel:[\S]+)/g,
+                  // Regex used to check URLs on paste
+                  globalRegularExpression: /(https?:\/\/|www\.|tel:)[\S]+/g,
+                },
               }}
               value={editorValue}
               onChange={onChangeEditor}
@@ -798,36 +967,24 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
 
           <Space direction="vertical">
             {/* <Form.Item name="subTasks"> */}
-            <Space direction="vertical">
-              <>
-                {subTasksComp.map((element) => element.content)}
-                <Button
-                  type="dashed"
-                  onClick={AddTask}
-                  block
-                  icon={<FontAwesomeIcon icon={faPlus} />}
-                  disabled={!openSubTaskBtn}
-                  style={{ width: '150px' }}
-                >
-                  Subtask
-                </Button>
-              </>
-            </Space>
+            <Space direction="vertical"></Space>
             {/* 
             </Form.Item> */}
-            <Space align="baseline" size={10}>
+            {/* <Space align="baseline" size={10}>
               <Tooltip placement="top" title="Priority">
-                <Form.Item name="priority">
-                  <DropdownProps
-                    type={'Priority'}
-                    text={'Medium'}
-                    id={taskKey}
-                  />
-                </Form.Item>
+                <DropdownProps
+                  type={'Priority'}
+                  text={priority}
+                  id={taskKey}
+                  onClickMenu={onChangePriority}
+                />
               </Tooltip>
 
-              <Form.Item name="dueDate">
-                <Space direction="horizontal">
+              <Form.Item
+                name="dueDate"
+                rules={[{ required: true, message: '' }]}
+              >
+                <Space direction="horizontal" title="Due Date">
                   <DatePicker
                     className={'datePicker'}
                     placeholder=""
@@ -849,22 +1006,14 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
                       WebkitBorderRadius: '100px',
                       cursor: 'pointer',
                     }}
-                    //bordered={false}
+                    allowClear={false}
                   />
                   {dueDate !== '' && (
                     <OverDueDate inputDate={new Date(dueDate)} />
                   )}
                 </Space>
               </Form.Item>
-
-              {/* <Form.Item
-              name="tags"
-            >
-              <Button shape="circle">
-                <FontAwesomeIcon icon={faTags} />
-              </Button>
-            </Form.Item> */}
-            </Space>
+            </Space> */}
           </Space>
           <Form.Item>
             <center>

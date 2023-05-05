@@ -17,6 +17,8 @@ type InitialState = {
   priority: string[]
   dueDate: RangePickerProps['value']
   closeDate: RangePickerProps['value']
+  statusCategory: SelectorValue[]
+  priorityCategory: SelectorValue[]
 }
 
 const initialState: InitialStateObj = {
@@ -29,6 +31,8 @@ const initialState: InitialStateObj = {
     priority: [],
     dueDate: null,
     closeDate: null,
+    statusCategory: [],
+    priorityCategory: [],
   },
 }
 
@@ -54,6 +58,15 @@ const userValueSlice = createSlice({
     addPriorityValue: (state, action: PayloadAction<string[]>) => {
       state.filtered.priority = action.payload
     },
+    addStatusCategoryValue: (state, action: PayloadAction<SelectorValue[]>) => {
+      state.filtered.statusCategory = action.payload
+    },
+    addPriorityCategoryValue: (
+      state,
+      action: PayloadAction<SelectorValue[]>,
+    ) => {
+      state.filtered.priorityCategory = action.payload
+    },
     addDueDateValue: (
       state,
       action: PayloadAction<RangePickerProps['value']>,
@@ -74,6 +87,8 @@ const userValueSlice = createSlice({
 })
 
 export const {
+  addStatusCategoryValue,
+  addPriorityCategoryValue,
   addUserValue,
   addTaskNameValue,
   addAssigneeValue,

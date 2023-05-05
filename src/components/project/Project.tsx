@@ -36,6 +36,11 @@ import IconGroup from '../IconGroup'
 import ParagraphExample from '../ParagraphExample'
 import TaskCreation from '../TaskCreation'
 import ProjectEnd from './ProjectEnd'
+import {
+  PriorityCategory,
+  StatusCategory,
+} from '../../data/database/Categories'
+import { ReactElementMapping, Sorter } from '../table/ReactElementMapping'
 
 const { Panel } = Collapse
 
@@ -73,34 +78,42 @@ const columns: ColumnsType<DataType> = [
     dataIndex: 'task',
     align: 'left',
     width: '40%',
+    // sorter: (a, b) => Sorter(a.task, b.task),
   },
   {
     title: 'Assignee',
     dataIndex: 'assignee',
     align: 'center',
     width: '10%',
+    // sorter: (a, b) => Sorter(a.assignee, b.assignee),
   },
   {
     title: 'Reporter',
     dataIndex: 'reporter',
     align: 'center',
     width: '10%',
+    // sorter: (a, b) => Sorter(a.reporter, b.reporter),
   },
   {
     title: 'Priority',
     dataIndex: 'priority',
     align: 'center',
     width: '15%',
+    sorter: (a, b) => Sorter(a.priority, b.priority),
   },
   {
     title: 'Due date',
     dataIndex: 'dueDate',
     width: '15%',
+    sorter: (a, b) => Sorter(a.dueDate, b.dueDate),
   },
 ]
 
 const Comp: React.FC<CompInput> = ({ filterResponse }) => {
   const [dataInput, setDataInput] = useState<DataType[]>([])
+  const statusList = JSON.parse(
+    localStorage.getItem('statusData')!,
+  ) as StatusCategory[]
   const navigate = useNavigate()
 
   const customExpandIcon = (props: any) => {
@@ -143,7 +156,7 @@ const Comp: React.FC<CompInput> = ({ filterResponse }) => {
     let inputObj: Tasks[] = JSON.parse(JSON.stringify(inputTaskList))
     const inputLength = inputObj.length
 
-    inputObj.forEach((element) => {
+    /* inputObj.forEach((element) => {
       if (element.Priority === 'Urgent') {
         element.PriorityNum = 1
       } else if (element.Priority === 'High') {
@@ -155,11 +168,12 @@ const Comp: React.FC<CompInput> = ({ filterResponse }) => {
       } else {
         element.PriorityNum = 5
       }
-    })
+    }) */
     inputObj = inputObj.sort(
       (a, b) =>
         new Date(a.DueDate!).getTime() - new Date(b.DueDate!).getTime() ||
-        (a.PriorityNum as number) - (b.PriorityNum as number) ||
+        (a.PriorityCategory as PriorityCategory).Level -
+          (b.PriorityCategory as PriorityCategory).Level ||
         new Date(a.CreateDate).getTime() - new Date(b.CreateDate).getTime(),
     )
 
@@ -180,72 +194,6 @@ const Comp: React.FC<CompInput> = ({ filterResponse }) => {
     })
   }
 
-  const MappingChildrenInner = (task: Tasks) => {
-    const _children: DataType[] = []
-    if (task.Subtask && task.Subtask.length > 0) {
-      ReorderTask(task.Subtask ? task.Subtask : []).forEach((element) => {
-        const __ignoreList: Status[] = GetStatusIgnoreList(
-          getCookie('user_id')?.toString()!,
-          element.Assignee[0]._id!,
-          element.Reporter._id!,
-          element.Status,
-        )
-
-        const reporters: Users[] = []
-        reporters.push(element.Reporter)
-
-        _children.push({
-          key: element._id! + '' + task._id,
-          status: (
-            <DropdownProps
-              type="Status"
-              text={element.Status}
-              button={false}
-              taskId={element._id}
-              ignoreStt={__ignoreList}
-              task={element}
-              mode={UPDATE_MODE}
-              //onClickMenu={handleMenuClickStatus}
-            />
-          ),
-          task: (
-            <>
-              <div onClick={() => OnNavigate(element)}>
-                <ParagraphExample
-                  name={element.TaskName}
-                  task={element}
-                  type="Task"
-                />
-              </div>
-            </>
-          ),
-          assignee: <IconGroup inputList={element.Assignee} />,
-          reporter: <IconGroup inputList={reporters} />,
-          priority: (
-            <>
-              <DropdownProps
-                type="Priority"
-                text={element.Priority}
-                button={false}
-                taskId={element._id}
-                task={element}
-                mode={UPDATE_MODE}
-              />
-            </>
-          ),
-          dueDate: (
-            <DateFormatter
-              dateString={element.DueDate!}
-              isDateNull={element.DueDate === null}
-              task={element}
-            />
-          ),
-        })
-      })
-    }
-    return _children
-  }
-
   const MappingChildren = (task: Tasks) => {
     const _children: DataType[] = []
     if (task.Subtask && task.Subtask.length > 0) {
@@ -254,7 +202,7 @@ const Comp: React.FC<CompInput> = ({ filterResponse }) => {
           getCookie('user_id')?.toString()!,
           element.Assignee[0]._id!,
           element.Reporter._id!,
-          element.Status,
+          (element.StatusCategory as StatusCategory).CategoryId!.toString(),
         )
 
         const reporters: Users[] = []
@@ -265,7 +213,9 @@ const Comp: React.FC<CompInput> = ({ filterResponse }) => {
           status: (
             <DropdownProps
               type="Status"
-              text={element.Status}
+              text={(
+                element.StatusCategory as StatusCategory
+              ).CategoryId!.toString()}
               button={false}
               taskId={element._id}
               ignoreStt={__ignoreList}
@@ -276,39 +226,55 @@ const Comp: React.FC<CompInput> = ({ filterResponse }) => {
           ),
           task: (
             <>
-              <div onClick={() => OnNavigate(element)}>
-                <ParagraphExample
-                  name={element.TaskName}
-                  task={element}
-                  type="Task"
-                />
-              </div>
+              <ReactElementMapping
+                customKey={element.TaskName}
+                children={
+                  <div onClick={() => OnNavigate(element)}>
+                    <ParagraphExample
+                      name={element.TaskName}
+                      task={element}
+                      type="Task"
+                      read={true}
+                    />
+                  </div>
+                }
+              />
             </>
           ),
           assignee: <IconGroup inputList={element.Assignee} />,
           reporter: <IconGroup inputList={reporters} />,
           priority: (
-            <>
-              <DropdownProps
-                type="Priority"
-                text={element.Priority}
-                button={false}
-                taskId={element._id}
-                task={element}
-                mode={UPDATE_MODE}
-              />
-            </>
+            <ReactElementMapping
+              customKey={(element.PriorityCategory as PriorityCategory).Level}
+              children={
+                <DropdownProps
+                  type="Priority"
+                  text={(
+                    element.PriorityCategory as PriorityCategory
+                  ).CategoryId!.toString()}
+                  button={false}
+                  taskId={element._id}
+                  task={element}
+                  mode={UPDATE_MODE}
+                />
+              }
+            />
           ),
           dueDate: (
-            <DateFormatter
-              dateString={element.DueDate!}
-              isDateNull={element.DueDate === null}
-              task={element}
+            <ReactElementMapping
+              customKey={element.DueDate ? element.DueDate.toString() : ''}
+              children={
+                <DateFormatter
+                  dateString={element.DueDate!}
+                  isDateNull={element.DueDate === null}
+                  task={element}
+                />
+              }
             />
           ),
           children:
             element.Subtask && element.Subtask.length > 0
-              ? MappingChildrenInner(element)
+              ? MappingChildren(element)
               : undefined,
         })
       })
@@ -328,7 +294,7 @@ const Comp: React.FC<CompInput> = ({ filterResponse }) => {
           getCookie('user_id')?.toString()!,
           element.Assignee[0]._id!,
           element.Reporter._id!,
-          element.Status,
+          (element.StatusCategory as StatusCategory).CategoryId!.toString(),
         )
 
         _dataInput.push({
@@ -336,7 +302,9 @@ const Comp: React.FC<CompInput> = ({ filterResponse }) => {
           status: (
             <DropdownProps
               type="Status"
-              text={element.Status}
+              text={(
+                element.StatusCategory as StatusCategory
+              ).CategoryId!.toString()}
               button={false}
               taskId={element._id}
               ignoreStt={_ignoreList}
@@ -347,34 +315,50 @@ const Comp: React.FC<CompInput> = ({ filterResponse }) => {
           ),
           task: (
             <>
-              <div onClick={() => OnNavigate(element)}>
-                <ParagraphExample
-                  name={element.TaskName}
-                  task={element}
-                  type="Task"
-                />
-              </div>
+              <ReactElementMapping
+                customKey={element.TaskName}
+                children={
+                  <div onClick={() => OnNavigate(element)}>
+                    <ParagraphExample
+                      name={element.TaskName}
+                      task={element}
+                      type="Task"
+                      read={true}
+                    />
+                  </div>
+                }
+              />
             </>
           ),
           assignee: <IconGroup inputList={element.Assignee} />,
           reporter: <IconGroup inputList={reporters} />,
           priority: (
-            <>
-              <DropdownProps
-                type="Priority"
-                text={element.Priority}
-                button={false}
-                taskId={element._id}
-                task={element}
-                mode={UPDATE_MODE}
-              />
-            </>
+            <ReactElementMapping
+              customKey={(element.PriorityCategory as PriorityCategory).Level}
+              children={
+                <DropdownProps
+                  type="Priority"
+                  text={(
+                    element.PriorityCategory as PriorityCategory
+                  ).CategoryId!.toString()}
+                  button={false}
+                  taskId={element._id}
+                  task={element}
+                  mode={UPDATE_MODE}
+                />
+              }
+            />
           ),
           dueDate: (
-            <DateFormatter
-              dateString={element.DueDate!}
-              isDateNull={element.DueDate === null}
-              task={element}
+            <ReactElementMapping
+              customKey={element.DueDate ? element.DueDate.toString() : ''}
+              children={
+                <DateFormatter
+                  dateString={element.DueDate!}
+                  isDateNull={element.DueDate === null}
+                  task={element}
+                />
+              }
             />
           ),
           children:
@@ -467,7 +451,11 @@ const Project: React.FC<ProjectInput> = ({ tab }) => {
   const HeaderStyle = (response: FilterResponse) => (
     <Row align="middle" className="project-row">
       <Col>
-        <span style={{ fontWeight: 600 }}>{response.ProjectName}</span>
+        <span style={{ fontWeight: 600 }}>
+          {response.CustomerName
+            ? '[' + response.CustomerName + '] ' + response.ProjectName
+            : response.ProjectName}
+        </span>
       </Col>
       {response.Status === ACTIVE ? (
         <>

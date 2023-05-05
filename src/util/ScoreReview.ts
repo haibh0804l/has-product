@@ -12,10 +12,7 @@ const GetScoreReviewDisplay = (
     showSCore: '',
   }
 
-  if (
-    currentStatus.toLowerCase() === 'Completed'.toLowerCase() ||
-    currentStatus.toLowerCase() === 'Incompleted'.toLowerCase()
-  ) {
+  if (+currentStatus === 3 || +currentStatus === 4) {
     if (userId === assigneeId) {
       if (assigneeId === reporterId) {
         scoreProps.showSCore = READONLY

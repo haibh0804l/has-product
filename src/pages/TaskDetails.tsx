@@ -31,27 +31,17 @@ import { UploadProps, Modal } from 'antd'
 import { Tasks } from '../data/database/Tasks'
 import { Users } from '../data/database/Users'
 import type { Dayjs } from 'dayjs'
-import {
-  NavigationType,
-  useLocation,
-  useMatches,
-  useNavigate,
-  useNavigationType,
-  useParams,
-} from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   faChevronLeft,
-  faEye,
-  faPaperclip,
   faPlus,
   faStar,
-  faTabletButton,
-  faTrash,
   faUserCheck,
   faUserPlus,
 } from '@fortawesome/free-solid-svg-icons'
 import { CustomRoutes } from '../customRoutes'
 import ReactQuill, { Quill } from 'react-quill'
+import MagicUrl from 'quill-magic-url'
 import 'react-quill/dist/quill.snow.css'
 import {
   GetTasksById,
@@ -64,8 +54,10 @@ import {
   DEFAULT_STT,
   DESCRIPTION,
   HIDE,
+  PRIORITY,
   READONLY,
   SHOW,
+  STATUS,
   SUMMARY,
   TYPE,
   UPDATE_FAIL,
@@ -98,6 +90,14 @@ import { TaskDetailsProps } from '../data/interface/ComponentsJson'
 
 import Auth from '../util/Auth'
 import CustomFileList from '../components/CustomFileList'
+import { PriorityCategory, StatusCategory } from '../data/database/Categories'
+import { GetAllSubTasks } from '../util/GetAllSubTasks'
+import {
+  addMainTaskDueDate,
+  addSubtaskDueDate,
+} from '../redux/features/dueDate/dueDateSlice'
+
+Quill.register('modules/magicUrl', MagicUrl)
 
 interface TaskData {
   taskData?: Tasks
@@ -144,7 +144,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
   const navigate = useNavigate()
 
   const location = useLocation()
-  const [parentTask, setParentTask] = useState('')
+  const [parentTask, setParentTask] = useState<any>()
   //const taskData = location.state.taskData as Tasks // Read values passed on state
   let assignee: Users[] = []
   const [loading, setLoading] = useState(true)
@@ -219,6 +219,12 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
   const [summaryPlaceholder, setSummaryPlaceholder] = useState(
     TYPE + ' ' + SUMMARY,
   )
+  const statusList = JSON.parse(
+    localStorage.getItem('statusData')!,
+  ) as StatusCategory[]
+  const priorityList = JSON.parse(
+    localStorage.getItem('priorityData')!,
+  ) as PriorityCategory[]
 
   //component state
   const [isTaskNameReadOnly, setIsTasknameReadOnly] = useState(false)
@@ -447,6 +453,13 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
                       [{ list: 'ordered' }, { list: 'bullet' }],
                       ['image'],
                     ],
+                    magicUrl: {
+                      // Regex used to check URLs during typing
+                      urlRegularExpression:
+                        /(https?:\/\/[\S]+)|(www.[\S]+)|(tel:[\S]+)/g,
+                      // Regex used to check URLs on paste
+                      globalRegularExpression: /(https?:\/\/|www\.|tel:)[\S]+/g,
+                    },
                   }
                 : { toolbar: false }
             }
@@ -459,7 +472,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
               if (!isDescriptionReadOnly) !saveBtn && setSaveBtn(true)
             }}
             style={{
-              height: '325px',
+              height: '200px',
               marginBottom: '50px',
               //overflow: 'inline',
             }}
@@ -504,6 +517,13 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
                       [{ list: 'ordered' }, { list: 'bullet' }],
                       ['image'],
                     ],
+                    magicUrl: {
+                      // Regex used to check URLs during typing
+                      urlRegularExpression:
+                        /(https?:\/\/[\S]+)|(www.[\S]+)|(tel:[\S]+)/g,
+                      // Regex used to check URLs on paste
+                      globalRegularExpression: /(https?:\/\/|www\.|tel:)[\S]+/g,
+                    },
                   }
                 : { toolbar: false }
             }
@@ -512,7 +532,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
             style={{
               /* height: '325px',
               overflow: 'inline', */
-              height: '325px',
+              height: '200px',
               marginBottom: '50px',
             }}
             onKeyDown={() => {
@@ -582,17 +602,18 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
     const data = await GetTasksById(
       '/api/task/getonetask/',
       taskId.id as string,
+      userInfo._id!.toString(),
     )
     if (data.length === 0) {
       navigate(CustomRoutes.NotFound.path, { replace: true })
       return
     }
     setTaskData(data[0])
-    if (
-      data[0].Status.toLowerCase() === 'Completed'.toLowerCase() ||
-      data[0].Status.toLowerCase() === 'Incompleted'.toLowerCase()
-    ) {
-      setReadOnly(false)
+    const _status = data[0].StatusCategory as StatusCategory
+    if (_status) {
+      if (_status.CategoryId == 3 || _status.CategoryId == 4) {
+        setReadOnly(false)
+      }
     }
 
     //attachment
@@ -777,7 +798,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
       getCookie('user_id')?.toString()!,
       data[0].Assignee[0]._id!,
       data[0].Reporter._id!,
-      data[0].Status,
+      (data[0].StatusCategory as StatusCategory).CategoryId.toString(),
     )
 
     if (scoreProp.showSCore === HIDE) {
@@ -794,11 +815,20 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
       getCookie('user_id')?.toString()!,
       data[0].Assignee[0]._id!,
       data[0].Reporter._id!,
-      data[0].Status,
+      (data[0].StatusCategory as StatusCategory).CategoryId.toString(),
     )
 
     setStatusIgnoreList(ignoreList)
 
+    await GetAllSubTasks(
+      getCookie('user_id')!,
+      data[0],
+      data[0]._id,
+      data[0].ParentTask as Tasks,
+    )
+
+    /* dispatch(addMainTaskDueDate(localStorage.getItem('taskDueDate')))
+    dispatch(addSubtaskDueDate(localStorage.getItem('subTaskDueDate'))) */
     setLoading(false)
   }, [])
 
@@ -817,7 +847,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
                 index={_subTaskComp.length}
                 subTaskId={_taskData.Subtask![index]._id}
                 task={_taskData.Subtask![index]}
-                parentTask={_taskData._id}
+                parentTask={_taskData}
               />
             ),
           })
@@ -883,21 +913,29 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
 
   const onOkEvent = async (date: null | (Dayjs | null)) => {
     const dateStr = date?.toString()
-    setTaskData({ ...taskData, DueDate: new Date(dateStr ? dateStr : '') })
+
     //Save DateTime here
     const inputTask: InputTasks = {
       DueDate: new Date(dateStr ? dateStr : ''),
     }
 
-    await UpdateTask('/api/task/', taskData._id!, inputTask).catch((error) => {
-      setLoading(false)
-      notification.open({
-        message: 'Notification',
-        description: UPDATE_FAIL,
-        duration: 2,
-        onClick: () => {},
+    await UpdateTask('/api/task/', taskData._id!, inputTask)
+      .then(() => {
+        setTaskData({ ...taskData, DueDate: new Date(dateStr ? dateStr : '') })
+        GetAllSubTasks(getCookie('user_id')!, undefined, taskData._id!)
+
+        dispatch(addMainTaskDueDate(localStorage.getItem('taskDueDate')))
+        setLoading(false)
       })
-    })
+      .catch((error) => {
+        setLoading(false)
+        notification.open({
+          message: 'Notification',
+          description: UPDATE_FAIL,
+          duration: 2,
+          onClick: () => {},
+        })
+      })
   }
 
   const OnBlurTaskName = async (e: any) => {
@@ -954,6 +992,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
       //console.log('Success ' + JSON.stringify(values))
       const _task: Tasks = JSON.parse(JSON.stringify(values))
       _task.Status = DEFAULT_STT
+      _task.Creator = userInfo
       _task.CreateDate = new Date()
       _task.StartDate = new Date()
       if (_task.DueDate === undefined) {
@@ -976,6 +1015,26 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
 
       if (_task.Priority === undefined) {
         _task.Priority = 'Medium'
+      }
+
+      const filterSttId = statusList.filter(
+        (element) =>
+          element.CategoryId == 1 &&
+          element.Type.toLowerCase() === STATUS.toLowerCase(),
+      )[0]._id
+
+      const filterPriorityId = priorityList.filter(
+        (element) =>
+          element.CategoryId == 6 &&
+          element.Type.toLowerCase() === PRIORITY.toLowerCase(),
+      )[0]._id
+
+      if (_task.StatusCategory === undefined) {
+        _task.StatusCategory = [filterSttId]
+      }
+
+      if (_task.PriorityCategory === undefined) {
+        _task.PriorityCategory = [filterPriorityId]
       }
 
       if (getCookie('projectId')) {
@@ -1024,7 +1083,26 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
         tasks: inputTasks,
       }
 
-      await InsertTask('', realInputTask)
+      try {
+        const response = await InsertTask('', realInputTask)
+        if (response.errorMessage !== '') {
+          message.error('Lỗi tạo task. Xin vui lòng thử lại sau')
+          setSubTaskComp(
+            subTasksComp.filter((element) => element.id !== _task._id),
+          )
+        }
+      } catch {
+        message.error('Lỗi tạo task. Xin vui lòng thử lại sau')
+        setSubTaskComp(
+          subTasksComp.filter((element) => element.id !== _task._id),
+        )
+      }
+      await GetAllSubTasks(
+        getCookie('user_id')!,
+        undefined,
+        taskData._id,
+        taskData.ParentTask as Tasks,
+      )
     }
 
     const onFinishFailed = (values: any) => {
@@ -1061,7 +1139,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
             index={subTasksComp.length}
             subTaskId={subId}
             task={myTask}
-            parentTask={taskData._id}
+            parentTask={taskData}
           />
         ),
       }),
@@ -1076,7 +1154,32 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
   return (
     <>
       <Modal
-        //title="Basic Modal"
+        title={
+          <Row>
+            <Col>
+              {haveParentTask === true && (
+                <Button
+                  style={{ padding: '0px', fontSize: '16px', color: '#0891B2' }}
+                  type="link"
+                  icon={
+                    <FontAwesomeIcon
+                      icon={faChevronLeft}
+                      style={{ marginRight: '10px', color: '#0891B2' }}
+                    />
+                  }
+                  onClick={() =>
+                    BackToMainTask((taskData.ParentTask as Tasks)._id!)
+                  }
+                  className="btn-back-to-main-task"
+                >
+                  <span className="btn-back-to-main-task-text">
+                    {(taskData.ParentTask as Tasks).TaskName}
+                  </span>
+                </Button>
+              )}
+            </Col>
+          </Row>
+        }
         open={open}
         //onOk={this.handleOk}
         onCancel={hideModal}
@@ -1088,177 +1191,172 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
         {!isNotAuthorize ? (
           loading === false ? (
             <Layout>
-              <Header style={{ height: '20%', marginLeft: '16px' }}>
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  {haveParentTask === true && (
-                    <Button
-                      //style={{ padding: '0px' }}
-                      type="primary"
-                      //icon={<FontAwesomeIcon icon={faChevronLeft} />}
-                      onClick={() => BackToMainTask(parentTask)}
-                    >
-                      Back to main tasks
-                    </Button>
-                  )}
-                  <Row gutter={12}>
-                    <Col className="gutter-row" span={16}>
-                      <Space direction="horizontal">
-                        <DropdownProps
-                          type="Status"
-                          text={taskData?.Status}
-                          button={true}
-                          taskId={taskData?._id}
-                          id={'details'}
-                          ignoreStt={statusIgnoreList}
-                          onClickMenu={onChangeStatus}
-                          task={taskData}
-                          disabled={isStatusReadOnly}
-                        />
-                        {isTaskNameReadOnly ? (
-                          <p className="bold-weight">{taskData?.TaskName}</p>
-                        ) : editTaskName === false ? (
-                          <p
-                            className="bold-weight"
-                            onClick={() => setEditTaskName(true)}
-                          >
-                            {taskData?.TaskName}
-                          </p>
-                        ) : (
-                          <Input
-                            showCount
-                            maxLength={100}
-                            defaultValue={taskData.TaskName}
-                            onBlur={OnBlurTaskName}
-                            autoFocus
-                          />
-                        )}
-                      </Space>
-                    </Col>
-                    {showScore && (
-                      <>
-                        <Col
-                          className="gutter-row"
-                          span={2}
-                          style={{ flex: 'revert' }}
+              <Header style={{ height: '20%' }}>
+                <Row gutter={12}>
+                  <Col className="gutter-row" span={16}>
+                    <Space direction="horizontal">
+                      <DropdownProps
+                        type="Status"
+                        text={(
+                          taskData.StatusCategory as StatusCategory
+                        ).CategoryId.toString()}
+                        button={true}
+                        taskId={taskData?._id}
+                        id={'details'}
+                        ignoreStt={statusIgnoreList}
+                        onClickMenu={onChangeStatus}
+                        task={taskData}
+                        parentTask={taskData.ParentTask as Tasks}
+                        disabled={isStatusReadOnly}
+                      />
+                      {isTaskNameReadOnly ? (
+                        <p className="bold-weight">{taskData?.TaskName}</p>
+                      ) : editTaskName === false ? (
+                        <p
+                          className="bold-weight"
+                          onClick={() => setEditTaskName(true)}
                         >
-                          <Space direction="horizontal" size={5}>
+                          {taskData?.TaskName}
+                        </p>
+                      ) : (
+                        <Input
+                          showCount
+                          maxLength={100}
+                          defaultValue={taskData.TaskName}
+                          onBlur={OnBlurTaskName}
+                          autoFocus
+                        />
+                      )}
+                    </Space>
+                  </Col>
+                  {showScore && (
+                    <>
+                      <Col
+                        className="gutter-row"
+                        span={2}
+                        style={{ flex: 'revert' }}
+                      >
+                        <Space direction="horizontal" size={5}>
+                          <Avatar
+                            onClick={() => {
+                              setMiniModal(true)
+                            }}
+                            style={{
+                              borderColor: '#FACC15',
+                              backgroundColor: 'white',
+                            }}
+                          >
+                            {/* <FontAwesomeIcon icon={faStar} color="#FACC15" /> */}
+                          </Avatar>
+                          <p
+                            style={{
+                              fontSize: '18px',
+                              color: '#0e7490',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            {taskData.Score!}
+                          </p>
+                        </Space>
+                      </Col>
+                    </>
+                  )}
+                  <Col
+                    className="gutter-row"
+                    flex="revert"
+                    style={{ marginRight: '10px' }}
+                  >
+                    <CustomDatePicker
+                      disabled={isDateReadOnly}
+                      dueDateInput={taskData.DueDate?.toString()!}
+                      //onChangeValue={OnChangeDateTime}
+                      mode={UPDATE_MODE}
+                      onOkEvent={onOkEvent}
+                      isSubtask={false}
+                      task={taskData}
+                    />
+                  </Col>
+                  <Col
+                    className="gutter-row"
+                    span={1}
+                    style={{ flex: 'revert' }}
+                  >
+                    <DropdownProps
+                      type={'Priority'}
+                      text={(
+                        taskData.PriorityCategory as PriorityCategory
+                      ).CategoryId.toString()}
+                      taskId={taskData?._id}
+                      id={'details'}
+                      task={taskData}
+                      disabled={isPriorityReadOnly}
+                    />
+                  </Col>
+                  {getUsers === false ? (
+                    <>
+                      <Col
+                        className="gutter-row"
+                        span={4}
+                        style={{ flex: 'revert' }}
+                      >
+                        <UserListComp
+                          disabled={isAssigneeReadOnly}
+                          userData={assigneeData}
+                          maxCount={2}
+                          icon={
                             <Avatar
-                              onClick={() => {
-                                setMiniModal(true)
-                              }}
                               style={{
-                                borderColor: '#FACC15',
+                                borderColor: '#9CA3AF',
                                 backgroundColor: 'white',
                               }}
                             >
-                              <FontAwesomeIcon icon={faStar} color="#FACC15" />
+                              <FontAwesomeIcon
+                                icon={faUserPlus}
+                                color="#000000"
+                              />
                             </Avatar>
-                            <p
+                          }
+                          tooltipText="Assignee"
+                          inputUserData={taskData?.Assignee}
+                          mode={UPDATE_MODE}
+                          assigneeUpdate={true}
+                          taskId={taskData._id}
+                        />
+                      </Col>
+                      <Col
+                        className="gutter-row"
+                        span={1}
+                        style={{ flex: 'revert' }}
+                      >
+                        <UserListComp
+                          onClickMenu={(e) => console.log('ReporterValue', e)}
+                          disabled={isReporterReadOnly}
+                          userData={reporterData}
+                          maxCount={3}
+                          icon={
+                            <Avatar
                               style={{
-                                fontSize: '18px',
-                                color: '#0e7490',
-                                fontWeight: 'bold',
+                                borderColor: '#9CA3AF',
+                                backgroundColor: 'white',
                               }}
                             >
-                              {taskData.Score!}
-                            </p>
-                          </Space>
-                        </Col>
-                      </>
-                    )}
-                    <Col
-                      className="gutter-row"
-                      flex="revert"
-                      style={{ marginRight: '10px' }}
-                    >
-                      <CustomDatePicker
-                        disabled={isDateReadOnly}
-                        dueDateInput={taskData.DueDate?.toString()!}
-                        //onChangeValue={OnChangeDateTime}
-                        mode={UPDATE_MODE}
-                        onOkEvent={onOkEvent}
-                      />
-                    </Col>
-                    <Col
-                      className="gutter-row"
-                      span={1}
-                      style={{ flex: 'revert' }}
-                    >
-                      <DropdownProps
-                        type={'Priority'}
-                        text={taskData?.Priority ? taskData?.Priority : ''}
-                        taskId={taskData?._id}
-                        id={'details'}
-                        task={taskData}
-                        disabled={isPriorityReadOnly}
-                        mode={UPDATE_MODE}
-                      />
-                    </Col>
-                    {getUsers === false ? (
-                      <>
-                        <Col
-                          className="gutter-row"
-                          span={4}
-                          style={{ flex: 'revert' }}
-                        >
-                          <UserListComp
-                            disabled={isAssigneeReadOnly}
-                            userData={assigneeData}
-                            maxCount={2}
-                            icon={
-                              <Avatar
-                                style={{
-                                  borderColor: '#9CA3AF',
-                                  backgroundColor: 'white',
-                                }}
-                              >
-                                <FontAwesomeIcon
-                                  icon={faUserPlus}
-                                  color="#000000"
-                                />
-                              </Avatar>
-                            }
-                            tooltipText="Assignee"
-                            inputUserData={taskData?.Assignee}
-                            mode={UPDATE_MODE}
-                            assigneeUpdate={true}
-                            taskId={taskData._id}
-                          />
-                        </Col>
-                        <Col
-                          className="gutter-row"
-                          span={1}
-                          style={{ flex: 'revert' }}
-                        >
-                          <UserListComp
-                            disabled={isReporterReadOnly}
-                            userData={reporterData}
-                            maxCount={3}
-                            icon={
-                              <Avatar
-                                style={{
-                                  borderColor: '#9CA3AF',
-                                  backgroundColor: 'white',
-                                }}
-                              >
-                                <FontAwesomeIcon
-                                  icon={faUserCheck}
-                                  color="#000000"
-                                />
-                              </Avatar>
-                            }
-                            tooltipText="Reporter"
-                            inputUserData={reporter}
-                            mode={UPDATE_MODE}
-                            taskId={taskData._id}
-                          />
-                        </Col>
-                      </>
-                    ) : (
-                      <Spin size="large" />
-                    )}
-                  </Row>
-                </Space>
+                              <FontAwesomeIcon
+                                icon={faUserCheck}
+                                color="#000000"
+                              />
+                            </Avatar>
+                          }
+                          tooltipText="Reporter"
+                          inputUserData={reporter}
+                          mode={UPDATE_MODE}
+                          taskId={taskData._id}
+                        />
+                      </Col>
+                    </>
+                  ) : (
+                    <Spin size="large" />
+                  )}
+                </Row>
               </Header>
               <Content>
                 <Row>
@@ -1270,23 +1368,25 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
                   >
                     <Space direction="vertical" style={{ width: '100%' }}>
                       <div style={{ height: '26.8rem', overflow: 'auto' }}>
-                        <Tabs
-                          defaultActiveKey={defaultTab}
-                          onChange={OnChange}
-                          items={itemSummary}
-                          style={{
-                            borderStyle: 'solid',
-                            borderWidth: 'thin',
-                            borderRadius: '4px',
-                            border: '1px solid #9CA3AF',
-                            minHeight: '450px',
-                            padding: '1%',
-                            overflow: 'hidden',
-                            position: 'relative',
-                            //maxHeight: '450px',
-                            height: 'max-content',
-                          }}
-                        />
+                        <div style={{ height: '340px' }}>
+                          <Tabs
+                            defaultActiveKey={defaultTab}
+                            onChange={OnChange}
+                            items={itemSummary}
+                            style={{
+                              borderStyle: 'solid',
+                              borderWidth: 'thin',
+                              borderRadius: '4px',
+                              border: '1px solid #9CA3AF',
+                              minHeight: '300px',
+                              padding: '1%',
+                              overflow: 'hidden',
+                              position: 'relative',
+                              //maxHeight: '450px',
+                              height: 'max-content',
+                            }}
+                          />
+                        </div>
 
                         <br />
                         <br />
@@ -1322,7 +1422,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
                       </Dragger>
                     </Space>
                   </Col>
-                  <Col flex={8} style={{ height: '500px' }}>
+                  <Col span={8} style={{ height: '500px' }}>
                     <Tabs
                       defaultActiveKey="2"
                       items={items}

@@ -59,7 +59,7 @@ const ScoreComp: React.FC<ScoreCompParam> = ({
   const updateScore = async (e: any) => {
     setLoading(true)
     const inputTask: InputTasks = {
-      Status: newStatus!,
+      StatusCategory: newStatus!,
       Score: inputValue,
       ScoreComment: commentValue,
       ScoreModifiedDate: new Date(),

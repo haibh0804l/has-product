@@ -3,7 +3,11 @@
 }
 
 .ant-layout-footer {
-  color: #fff;
+  color: #ffffff;
+  background: #ffffff !important;
+}
+
+.ant-layout-header {
   background: #ffffff !important;
 }
 

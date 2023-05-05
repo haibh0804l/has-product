@@ -25,9 +25,7 @@ const GetUserByType = async (
         type: type,
       },
       {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: ServiceHeader(),
       },
     )
     .then((res) => {

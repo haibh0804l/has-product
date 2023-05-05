@@ -20,8 +20,8 @@ const { Text } = Typography
 const Comp: React.FC<CompInput> = ({ action, createdDate }) => {
   return (
     <Row gutter={10}>
-      <Col flex={'auto'}>{action}</Col>
-      <Col>
+      <Col span={21}>{action}</Col>
+      <Col span={5}>
         <DateFormatter dateString={createdDate} />
       </Col>
     </Row>

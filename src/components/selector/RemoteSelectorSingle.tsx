@@ -25,6 +25,7 @@ interface RemoteSelectorInput {
   projectId?: string
   isProjectChange?: boolean
   projectStatus?: string
+  defaultValue?: SelectorValue
 }
 
 export interface DebounceSelectProps<ValueType = any>
@@ -236,8 +237,10 @@ const RemoteSelectorSingle: React.FC<RemoteSelectorInput> = ({
   projectId,
   isProjectChange,
   projectStatus,
+  defaultValue,
 }) => {
   const [value, setValue] = useState<SelectorValue>()
+  const [defaultInner, setDefaultInner] = useState<SelectorValue>()
 
   useEffect(() => {
     if (initValue) {
@@ -260,8 +263,9 @@ const RemoteSelectorSingle: React.FC<RemoteSelectorInput> = ({
     <DebounceSelect
       showSearch
       allowClear
-      value={value}
+      value={initValue}
       placeholder={placeHolder}
+      //defaultValue={defaultValue}
       fetchOptions={(e) =>
         fetchUserList(e, type, isProjectFixed, projectId, projectStatus)
       }

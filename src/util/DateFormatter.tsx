@@ -10,7 +10,7 @@ interface DateString {
 
 const FormatSmallNum = (value: string) => {
   if (value.length < 2) {
-    let valueNum: Number = +value
+    let valueNum: number = +value
     if (valueNum < 10 && valueNum > 0) {
       value = '0' + value
     }
@@ -23,7 +23,7 @@ const FormatSmallNum = (value: string) => {
 }
 
 const FormatDateNum = (value: string) => {
-  let valueNum: Number = +value
+  let valueNum: number = +value
   if (valueNum < 10) {
     value = '0' + value
   }
@@ -63,8 +63,8 @@ const DateFormatter: React.FC<DateString> = ({
       } else {
         output = da + '/' + mo + '/' + ye + ' , ' + ho + ':' + mi
       }
-
-      if (task.Status === 'Completed' || task.Status === 'Incompleted') {
+      return <>{output}</>
+      /* if (task.Status === 'Completed' || task.Status === 'Incompleted') {
         if (task.CloseDate === undefined) {
           return <>{output}</>
         } else {
@@ -80,7 +80,7 @@ const DateFormatter: React.FC<DateString> = ({
         } else {
           return <>{output}</>
         }
-      }
+      } */
     } else {
       return <></>
     }

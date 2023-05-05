@@ -1,7 +1,5 @@
 import { combineReducers, configureStore } from '@reduxjs/toolkit'
 import storage from 'redux-persist/lib/storage'
-import cakeReducer from '../features/cake/cakeSlice'
-import icecreamReducer from '../features/icecream/icecreamSlice'
 import userReducer from '../features/user/userSlice'
 import usersReducer from '../features/users/usersSlice'
 import errorReducer from '../features/errors/errorSlice'
@@ -19,15 +17,17 @@ import userValueReducer from '../features/userInfo/userValueSlice'
 import trustScoreReducer from '../features/report/trustScoreSlice'
 import routeReducer from '../features/routes/routeSlice'
 import { persistReducer, persistStore } from 'redux-persist'
+import statusReducer from '../features/categories/statusSlice'
+import priorityReducer from '../features/categories/prioritySlice'
+import dueDateReducer from '../features/dueDate/dueDateSlice'
 
-/* const persistConfig = {
+const persistConfig = {
   key: 'root',
   storage,
-} */
+  whitelist: ['status', 'priority'],
+}
 
 const reducers = combineReducers({
-  cake: cakeReducer,
-  icecream: icecreamReducer,
   user: userReducer,
   users: usersReducer,
   errorMessage: errorReducer,
@@ -44,12 +44,15 @@ const reducers = combineReducers({
   userValue: userValueReducer,
   trustScore: trustScoreReducer,
   route: routeReducer,
+  status: statusReducer,
+  priority: priorityReducer,
+  dueDate: dueDateReducer,
 })
 
-/* const persistedReducers = persistReducer(persistConfig, reducers) */
+const persistedReducers = persistReducer(persistConfig, reducers)
 
 const store = configureStore({
-  reducer: {
+  /* reducer: {
     cake: cakeReducer,
     icecream: icecreamReducer,
     user: userReducer,
@@ -68,7 +71,8 @@ const store = configureStore({
     userValue: userValueReducer,
     trustScore: trustScoreReducer,
     route: routeReducer,
-  },
+  }, */
+  reducer: reducers,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
@@ -80,7 +84,7 @@ const store = configureStore({
           'userValue/addCloseDateValue',
         ],
         // Ignore these field paths in all actions
-        //ignoredActionPaths: ['userValue.filter.dueDate.0'],
+        ignoredActionPaths: ['register', 'rehydrate'],
 
         // Ignore these paths in the state
         ignoredPaths: [
@@ -100,4 +104,4 @@ const store = configureStore({
 export default store
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
-/* export const persistor = persistStore(store) */
+export const persistor = persistStore(store)

@@ -5,7 +5,7 @@ export interface SubTaskProp {
   index: number
   subTaskId: string
   task?: Tasks
-  parentTask?: string
+  parentTask?: Tasks
 }
 
 export interface SubTaskCompProp {

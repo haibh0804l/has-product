@@ -24,84 +24,55 @@ const GetReviewAndScoreDisplay = (
     if (assigneeId === reporterId) {
       scoreProps.showSCore = HIDE
       scoreProps.score = 0
-      if (
-        currentStatus.toLowerCase() === 'In progress'.toLowerCase() &&
-        postStatus.toLowerCase() === 'Done'.toLowerCase()
-      ) {
-      } else if (currentStatus.toLowerCase() === 'Done'.toLowerCase()) {
+      if (+currentStatus === 1 && +postStatus === 2) {
+      } else if (+currentStatus === 2) {
         //nothing happen
-      } else if (
-        currentStatus.toLowerCase() === 'Completed'.toLowerCase() &&
-        postStatus.toLowerCase() === 'Incompleted'.toLowerCase()
-      ) {
-      } else if (
-        postStatus.toLowerCase() === 'Completed'.toLowerCase() &&
-        currentStatus.toLowerCase() === 'Incompleted'.toLowerCase()
-      ) {
+      } else if (+currentStatus === 3 && +postStatus === 4) {
+      } else if (+postStatus === 3 && +currentStatus === 4) {
       }
     } else {
       scoreProps.showSCore = HIDE
       scoreProps.score = 0
       if (
-        (currentStatus.toLowerCase() === 'In progress'.toLowerCase() &&
-          postStatus.toLowerCase() === 'Done'.toLowerCase()) ||
-        (postStatus.toLowerCase() === 'In progress'.toLowerCase() &&
-          currentStatus.toLowerCase() === 'Done'.toLowerCase())
+        (+currentStatus === 1 && +postStatus === 2) ||
+        (+postStatus === 1 && +currentStatus === 2)
       ) {
         //do nothing
-      } else if (
-        currentStatus.toLowerCase() === 'Completed'.toLowerCase() ||
-        currentStatus.toLowerCase() === 'Incompleted'.toLowerCase()
-      ) {
+      } else if (+currentStatus === 3 || +currentStatus === 4) {
       }
     }
   } else {
     if (userId === reporterId) {
       if (reporterId !== assigneeId) {
-        if (currentStatus.toLowerCase() === 'In progress'.toLowerCase()) {
+        if (+currentStatus === 1) {
           scoreProps.showSCore = HIDE
           scoreProps.score = 0
-        } else if (currentStatus.toLowerCase() === 'Done'.toLowerCase()) {
-          if (postStatus.toLowerCase() === 'In progress'.toLowerCase()) {
+        } else if (+currentStatus === 2) {
+          if (+postStatus === 1) {
             scoreProps.showSCore = HIDE
             scoreProps.score = DEFAULT_NOTPASS_SCORE
-          } else if (postStatus.toLowerCase() === 'Completed'.toLowerCase()) {
+          } else if (+postStatus === 3) {
             scoreProps.showSCore = SHOW
             scoreProps.score = DEFAULT_PASS_SCORE
-          } else if (postStatus.toLowerCase() === 'Incompleted'.toLowerCase()) {
+          } else if (+postStatus === 4) {
             scoreProps.showSCore = SHOW
             scoreProps.score = DEFAULT_NOTPASS_SCORE
           }
-        } else if (
-          currentStatus.toLowerCase() === 'Completed'.toLowerCase() &&
-          postStatus.toLowerCase() === 'Incompleted'.toLowerCase()
-        ) {
+        } else if (+currentStatus === 3 && +postStatus === 4) {
           scoreProps.score = score!
           scoreProps.showSCore = SHOW
-        } else if (
-          postStatus.toLowerCase() === 'Completed'.toLowerCase() &&
-          currentStatus.toLowerCase() === 'Incompleted'.toLowerCase()
-        ) {
+        } else if (+postStatus === 3 && +currentStatus === 4) {
           scoreProps.score = score!
           scoreProps.showSCore = SHOW
         }
       } else {
-        if (
-          currentStatus.toLowerCase() === 'In progress'.toLowerCase() &&
-          postStatus.toLowerCase() === 'Done'.toLowerCase()
-        ) {
+        if (+currentStatus === 1 && +postStatus === 2) {
           scoreProps.showSCore = HIDE
-        } else if (currentStatus.toLowerCase() === 'Done'.toLowerCase()) {
+        } else if (+currentStatus === 2) {
           scoreProps.showSCore = HIDE
-        } else if (
-          currentStatus.toLowerCase() === 'Completed'.toLowerCase() &&
-          postStatus.toLowerCase() === 'Incompleted'.toLowerCase()
-        ) {
+        } else if (+currentStatus === 3 && +postStatus === 4) {
           scoreProps.showSCore = HIDE
-        } else if (
-          postStatus.toLowerCase() === 'Completed'.toLowerCase() &&
-          currentStatus.toLowerCase() === 'Incompleted'.toLowerCase()
-        ) {
+        } else if (+postStatus === 3 && +currentStatus === 4) {
           scoreProps.showSCore = HIDE
         }
       }

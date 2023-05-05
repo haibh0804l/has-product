@@ -16,8 +16,11 @@ import type { Dayjs } from 'dayjs'
 import { useNavigate } from 'react-router-dom'
 import { CustomRoutes } from '../customRoutes'
 import {
+  ASSIGNEE,
   IGNORE_STT_DEFAULT,
   IGNORE_STT_DEFAULT_TASK_DETAIL,
+  PRIORITY,
+  REPORTER,
   UPDATE_MODE,
 } from '../util/ConfigText'
 import { InputTasks } from '../data/database/InputTasks'
@@ -28,6 +31,9 @@ import GetStatusIgnoreList from '../util/StatusList'
 import { getCookie } from 'typescript-cookie'
 import { GetUserByType } from '../data/services/allUsersService'
 import { GetUsersByProject } from '../data/services/projectService'
+import { useAppSelector } from '../redux/app/hook'
+import { PriorityCategory, StatusCategory } from '../data/database/Categories'
+import { _private } from 'workbox-core'
 
 const UserListComp = React.lazy(() => import('./UserListComp'))
 type SubTaskInput = {
@@ -41,8 +47,18 @@ type SubTaskInput = {
   mode?: string
   taskId?: string
   isEditDetail?: boolean
-  parentTask?: string
+  parentTask?: Tasks
   disabled?: boolean
+}
+
+const errorBorder: React.CSSProperties = {
+  borderColor: 'red',
+  width: '100%',
+}
+
+const normalBorder: React.CSSProperties = {
+  borderColor: 'transparent',
+  width: '100%',
 }
 
 const items: MenuProps['items'] = []
@@ -60,6 +76,8 @@ const SubTask: React.FC<SubTaskInput> = ({
   disabled,
 }) => {
   //const taskKey = 'Subtask'
+  const [inputStyle, setInputStyle] =
+    useState<React.CSSProperties>(normalBorder)
   const navigate = useNavigate()
   const [form] = Form.useForm()
   const [subTask, setSubTask] = useState<Tasks>(tasks)
@@ -72,9 +90,16 @@ const SubTask: React.FC<SubTaskInput> = ({
   const [statusIgnoreList, setStatusIgnoreList] = useState<Status[]>([])
   const [assigneeDataInner, setAssigneeDataInner] = useState<Users[]>([])
   const [reporterDataInner, setReporterDataInner] = useState<Users[]>([])
+  const [dataLoaded, setDataLoaded] = useState(false)
   const [disabledSubtask, setDisabledSubtask] = useState(
     disabled ? disabled : false,
   )
+  const statusList = JSON.parse(
+    localStorage.getItem('statusData')!,
+  ) as StatusCategory[]
+  const priorityList = JSON.parse(
+    localStorage.getItem('priorityData')!,
+  ) as PriorityCategory[]
 
   useEffect(() => {
     setDisabledSubtask(disabled ? disabled : false)
@@ -126,6 +151,7 @@ const SubTask: React.FC<SubTaskInput> = ({
       setAssigneeDataInner(assigneeData)
       setReporterDataInner(reporterData)
     }
+    setDataLoaded(true)
   }, [])
 
   useEffect(() => {
@@ -141,7 +167,7 @@ const SubTask: React.FC<SubTaskInput> = ({
         getCookie('user_id')?.toString()!,
         tasks.Assignee[0]._id!,
         tasks.Reporter._id!,
-        tasks.Status,
+        (tasks.StatusCategory as StatusCategory).CategoryId.toString(),
       )
 
       setStatusIgnoreList(ignoreList)
@@ -184,10 +210,16 @@ const SubTask: React.FC<SubTaskInput> = ({
   }
 
   const handleMenuClick = (e: any) => {
-    setSubTask({ ...subTask, Priority: e })
-    setHideSubmitBtn(false)
+    const filterPriorityId = priorityList.filter(
+      (element) => element.CategoryId == e,
+    )
+    if (filterPriorityId.length) {
+      console.log('Bur')
+      setSubTask({ ...subTask, PriorityCategory: [filterPriorityId[0]._id] })
+      setHideSubmitBtn(false)
 
-    form.setFieldsValue({ Priority: e })
+      form.setFieldsValue({ PriorityCategory: [filterPriorityId[0]._id] })
+    }
     //console.log('Key ' + e)
     //save priority
   }
@@ -270,6 +302,7 @@ const SubTask: React.FC<SubTaskInput> = ({
             }}
             onFinishFailed={(e: any) => {
               //setEditTaskName(true)
+              setInputStyle(errorBorder)
               setHideSubmitBtn(false)
               onFinishFailed(e)
             }}
@@ -289,13 +322,20 @@ const SubTask: React.FC<SubTaskInput> = ({
                 {(tasks.created !== false && showEditDetail) === true && (
                   <DropdownProps
                     type="Status"
-                    text={tasks.Status ? tasks.Status : ''}
+                    text={
+                      tasks.StatusCategory
+                        ? (
+                            tasks.StatusCategory as StatusCategory
+                          ).CategoryId!.toString()
+                        : '1'
+                    }
                     //button={true}
                     taskId={taskId}
                     id={'details'}
                     ignoreStt={statusIgnoreList}
                     mode={mode}
                     task={tasks}
+                    parentTask={parentTask}
                   />
                 )}
               </Form.Item>
@@ -323,13 +363,14 @@ const SubTask: React.FC<SubTaskInput> = ({
                     showCount
                     name="TaskName"
                     maxLength={100}
-                    style={{ borderColor: 'transparent', width: '100%' }}
+                    style={inputStyle}
                     autoFocus={autoFocus}
                     //defaultValue={subTask.TaskName}
                     //value={subTask.TaskName}
                     onChange={(e) => {
                       form.setFieldsValue({ TaskName: e.target.value })
                       if (e.target.value.trim() !== '') {
+                        setInputStyle(normalBorder)
                         setHideSubmitBtn(false)
                         setSubTask({
                           ...subTask,
@@ -384,28 +425,31 @@ const SubTask: React.FC<SubTaskInput> = ({
                   marginBottom: '0px',
                 }}
               >
-                <Suspense fallback={<div>Loading...</div>}>
-                  <UserListComp
-                    disabled={disabledSubtask}
-                    userData={assigneeDataInner}
-                    maxCount={2}
-                    icon={
-                      <Avatar
-                        style={{
-                          borderColor: '#9CA3AF',
-                          backgroundColor: 'white',
-                        }}
-                      >
-                        <FontAwesomeIcon icon={faUserPlus} color="#000000" />
-                      </Avatar>
-                    }
-                    onClickMenu={handleMenuClickAssignee}
-                    mode={mode}
-                    inputUserData={subTask.Assignee}
-                    assigneeUpdate={true}
-                    taskId={taskId}
-                  />
-                </Suspense>
+                {dataLoaded && (
+                  <Suspense fallback={<div>Loading...</div>}>
+                    <UserListComp
+                      disabled={disabledSubtask}
+                      userData={assigneeDataInner}
+                      maxCount={2}
+                      icon={
+                        <Avatar
+                          style={{
+                            borderColor: '#9CA3AF',
+                            backgroundColor: 'white',
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faUserPlus} color="#000000" />
+                        </Avatar>
+                      }
+                      tooltipText="Assignee"
+                      onClickMenu={handleMenuClickAssignee}
+                      mode={mode}
+                      inputUserData={subTask.Assignee}
+                      assigneeUpdate={true}
+                      taskId={taskId}
+                    />
+                  </Suspense>
+                )}
               </Form.Item>
               <Form.Item
                 //label="Username"
@@ -414,31 +458,34 @@ const SubTask: React.FC<SubTaskInput> = ({
                   marginBottom: '0px',
                 }}
               >
-                <Suspense fallback={<div>Loading...</div>}>
-                  <UserListComp
-                    disabled={disabledSubtask}
-                    userData={reporterDataInner}
-                    maxCount={3}
-                    icon={
-                      <Avatar
-                        style={{
-                          borderColor: '#9CA3AF',
-                          backgroundColor: 'white',
-                        }}
-                      >
-                        <FontAwesomeIcon icon={faUserCheck} color="#000000" />
-                      </Avatar>
-                    }
-                    onClickMenu={handleMenuClickReporter}
-                    mode={mode}
-                    inputUserData={reporters}
-                    taskId={taskId}
-                  />
-                </Suspense>
+                {dataLoaded && (
+                  <Suspense fallback={<div>Loading...</div>}>
+                    <UserListComp
+                      disabled={disabledSubtask}
+                      userData={reporterDataInner}
+                      maxCount={3}
+                      icon={
+                        <Avatar
+                          style={{
+                            borderColor: '#9CA3AF',
+                            backgroundColor: 'white',
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faUserCheck} color="#000000" />
+                        </Avatar>
+                      }
+                      tooltipText="Reporter"
+                      onClickMenu={handleMenuClickReporter}
+                      mode={mode}
+                      inputUserData={reporters}
+                      taskId={taskId}
+                    />
+                  </Suspense>
+                )}
               </Form.Item>
               <Form.Item
                 //label="Username"
-                name="Priority"
+                name="PriorityCategory"
                 style={{
                   marginBottom: '0px',
                 }}
@@ -446,7 +493,13 @@ const SubTask: React.FC<SubTaskInput> = ({
                 <DropdownProps
                   disabled={disabledSubtask}
                   type={'Priority'}
-                  text={tasks.Priority ? tasks.Priority : ''}
+                  text={
+                    tasks.PriorityCategory
+                      ? (
+                          tasks.PriorityCategory as PriorityCategory
+                        ).CategoryId.toString()
+                      : '6'
+                  }
                   id={'SubTask'}
                   onClickMenu={handleMenuClick}
                   mode={mode}
@@ -457,6 +510,7 @@ const SubTask: React.FC<SubTaskInput> = ({
               <Form.Item
                 //label="Username"
                 name="DueDate"
+                rules={[{ required: true, message: '' }]}
                 style={{
                   marginBottom: '0px',
                 }}
@@ -468,6 +522,8 @@ const SubTask: React.FC<SubTaskInput> = ({
                   //onChangeValue={OnChangeDateTime}
                   mode={mode}
                   onOkEvent={onOkEvent}
+                  isSubtask={true}
+                  task={tasks}
                 />
               </Form.Item>
 

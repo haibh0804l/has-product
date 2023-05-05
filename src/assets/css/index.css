@@ -26,6 +26,14 @@ p {
   background-color: #f1f5f9 !important;
 }
 
+.ant-table-tbody > tr.ant-table-row-level-0:hover > td {
+  border-radius: 0;
+}
+
+.btn-back-to-main-task .btn-back-to-main-task-text:hover {
+  color: #0e7490;
+}
+
 /* .ant-menu-vertical > .ant-menu-submenu {
     background-color: #0E7490 !important
 } */
@@ -161,6 +169,7 @@ p {
 }
 
 .quill > .ql-container > .ql-editor.ql-blank::before {
+  font-weight: normal;
   font-style: normal;
   font-size: 14px;
   color: #cececc;

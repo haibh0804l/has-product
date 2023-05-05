@@ -28,6 +28,8 @@ const initialState: InitialState = {
       fromDate: undefined,
       toDate: undefined,
     },
+    statusCategory: [],
+    priorityCategory: [],
     priority: [],
     closeDate: {},
     completed: false,
@@ -36,8 +38,8 @@ const initialState: InitialState = {
   loading: false,
   filterResponse: [],
   error: '',
-  tabs: sessionStorage.getItem('tab')?.toString()
-    ? sessionStorage.getItem('tab')?.toString()
+  tabs: localStorage.getItem('tab')?.toString()
+    ? localStorage.getItem('tab')?.toString()
     : '1',
 }
 
@@ -90,6 +92,12 @@ const filterSlice = createSlice({
     addClosedProject: (state, action: PayloadAction<boolean>) => {
       state.filter.closedProject = action.payload
     },
+    addStatusCategory: (state, action: PayloadAction<string[]>) => {
+      state.filter.statusCategory = action.payload
+    },
+    addPriorityCategory: (state, action: PayloadAction<string[]>) => {
+      state.filter.priorityCategory = action.payload
+    },
     addFilter: (state, action: PayloadAction<FilterInterface>) => {
       state.filter = action.payload
     },
@@ -118,6 +126,8 @@ const filterSlice = createSlice({
 })
 
 export const {
+  addStatusCategory,
+  addPriorityCategory,
   addClosedProject,
   addFilter,
   addTabs,

@@ -63,10 +63,10 @@ const CustomHeader: React.FC<IHeader> = ({ pageName, userData }) => {
         <center
           style={{ width: '100%' }}
           onClick={() => {
-            sessionStorage.clear()
+            localStorage.clear()
             removeCookie('user_id')
             removeCookie('userInfo')
-            sessionStorage.removeItem('reloadCount')
+            localStorage.removeItem('reloadCount')
             navigate(CustomRoutes.Signin.path)
           }}
         >
