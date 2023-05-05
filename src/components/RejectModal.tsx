@@ -205,7 +205,7 @@ const RejectModal: React.FC<ScoreCompParam> = ({
         title={<center style={{ marginTop: '20px' }}>{title}</center>}
         open={openModal}
         onCancel={closeFunc}
-        width="25%"
+        width="30%"
         footer={
           <>
             <Button

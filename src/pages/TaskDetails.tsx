@@ -1246,7 +1246,7 @@ const TaskDetails: React.FC<TaskData> = ({ openModal, name }) => {
                               backgroundColor: 'white',
                             }}
                           >
-                            {/* <FontAwesomeIcon icon={faStar} color="#FACC15" /> */}
+                            <FontAwesomeIcon icon={faStar} color="#FACC15" />
                           </Avatar>
                           <p
                             style={{

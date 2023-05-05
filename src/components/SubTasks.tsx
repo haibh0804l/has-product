@@ -155,6 +155,9 @@ const SubTask: React.FC<SubTaskInput> = ({
   }, [])
 
   useEffect(() => {
+    if (tasks.DueDate) {
+      form.setFieldsValue({ DueDate: tasks.DueDate })
+    }
     fetchData()
   }, [fetchData])
 

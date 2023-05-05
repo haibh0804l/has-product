@@ -863,7 +863,7 @@ const TaskCreation: React.FC<TaskCreationInput> = ({
                       name="dueDate"
                       rules={[{ required: true, message: '' }]}
                     >
-                      <Space direction="horizontal">
+                      <Space direction="horizontal" title="Due Date">
                         <DatePicker
                           className={'datePicker'}
                           placeholder=""
